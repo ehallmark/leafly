@@ -18,6 +18,8 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Scraper {
@@ -164,7 +166,7 @@ public class Scraper {
                                 e.printStackTrace();
                             }
                         }
-                        System.out.println("Strain " + n + " -> Page: " + cnt);
+                       // System.out.println("Strain " + n + " -> Page: " + cnt);
                         reviewFile = new File(new File(folder, "reviews"), href.replace("/", "_") + "_" + cnt);
                         if (!reviewFile.exists() || reseed) {
                             if (!wasSeeking) {
@@ -193,23 +195,94 @@ public class Scraper {
     private static void handleOverviews(String strainId, String reviewPage) throws Exception {
         Document document = Jsoup.parse(reviewPage);
         // name, type, rating, effects, flavors, description
-        Elements reviews = document.select(".strain-reviews__review-container li.page-item div.m-review");
-        for(Element review : reviews) {
-       //     System.out.println("Found review for "+strainId+": "+review.html());
+        String type;
+        if(strainId.startsWith("_indica")) {
+            type = "Indica";
+        } else if(strainId.startsWith("_sativa")) {
+            type = "Sativa";
+        } else if (strainId.startsWith("_hybrid")) {
+            type = "Hybrid";
+        } else {
+            return;
         }
+        String name = null;
+        String description = null;
+        Double rating = null;
+        List<String> effects = new ArrayList<>();
+        List<String> flavors = new ArrayList<>();
+        List<String> lineage = new ArrayList<>();
+        Elements descriptionElem = document.select("div.description-wrapper div.description");
+        if(descriptionElem.size()>0) {
+            name = descriptionElem.get(0).parent().previousElementSibling().text().replace("What is", "").replace("?", "").trim();
+            description = descriptionElem.text();
+        }
+        Elements ratingElem = document.select("div.rating-number");
+        if(ratingElem.size()>0) {
+            rating = Double.valueOf(ratingElem.text());
+        }
+        Elements lineageElem = document.select("div.strain__lineage ul a[href]");
+        for(Element line : lineageElem) {
+            lineage.add(line.attr("href").replace("/", "_").trim());
+        }
+        Elements flavorsSection = document.select("section.strain__flavors li");
+        for(Element flavor : flavorsSection) {
+            flavors.add(flavor.text().replaceAll("[0-9.]", "").trim());
+        }
+        Elements effectsSection = document.select("div.m-strain-attributes div.m-histogram div.m-histogram-item").not(".ng-hide");
+        for(Element effect : effectsSection) {
+            effects.add(effect.text().trim());
+        }
+        System.out.println("Name: "+name);
+        System.out.println("Type: "+type);
+        System.out.println("Desc: "+description);
+        System.out.println("Rating: "+rating);
+        System.out.println("Flavors: "+String.join("; ", flavors));
+        System.out.println("Effects: "+String.join("; ", effects));
+        System.out.println("Lineage: "+String.join("; ", lineage));
+
     }
 
     private static void handleReviews(String strainId, String reviewPage) throws Exception{
-        // num reviews, review text
+        if(!(strainId.startsWith("_indica") || strainId.startsWith("_sativa")||strainId.startsWith("_hybrid"))) {
+            return;
+        }
+
+        // author, rating, review text
         Document document = Jsoup.parse(reviewPage);
         Elements reviews = document.select(".strain-reviews__review-container li.page-item div.m-review");
         for(Element review : reviews) {
        //     System.out.println("Found review for "+strainId+": "+review.html());
+            String profile = review.select("a[href]").attr("href").replace("/profile/","").trim();
+            int rating = Integer.valueOf(review.select("span[star-rating]").attr("star-rating"));
+            String text = review.select("div.l-grid p").text().trim();
+            if(text.length()>2) {
+                text = text.substring(1, text.length() - 1);
+            }
+            System.out.println("Name: "+strainId);
+            System.out.println("Profile: "+profile);
+            System.out.println("Rating: "+rating);
+            System.out.println("Text: "+text);
+
         }
     }
 
-    private static void handlePhotos(String strainId, String reviewPage) throws Exception{
-        // num reviews, review text
+    private static void handlePhotos(String strainId, String photoPage) throws Exception{
+        if(!(strainId.startsWith("_indica") || strainId.startsWith("_sativa")||strainId.startsWith("_hybrid"))) {
+            return;
+        }
+
+        // download photo if isn't already saved
+        Document document = Jsoup.parse(photoPage);
+        Elements images = document.select("div.photos__photo-container img[src]");
+        for(Element image : images) {
+            String src = image.attr("src");
+            String imageName = src.split("/reviews/")[1];
+            System.out.println("Downloading image: " + imageName);
+            File imageFile = new File("leafly/images/" + imageName);
+            if (!imageFile.exists()) {
+                FileUtils.copyURLToFile(new URL(src), );
+            }
+        }
     }
 
 }
