@@ -228,7 +228,7 @@ public class Scraper {
         for(Element flavor : flavorsSection) {
             flavors.add(flavor.text().replaceAll("[0-9.]", "").trim());
         }
-        Elements effectsSection = document.select("div.m-strain-attributes div.m-histogram div.m-histogram-item").not(".ng-hide");
+        Elements effectsSection = document.select("div.m-strain-attributes div.m-histogram div.m-histogram-item-wrapper").not(".ng-hide");
         for(Element effect : effectsSection) {
             effects.add(effect.text().trim());
         }
