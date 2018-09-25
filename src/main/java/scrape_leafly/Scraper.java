@@ -7,6 +7,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -39,7 +40,8 @@ public class Scraper {
     }
 
     public static void main(String[] args) throws Exception {
-        long timeSleep = 250;
+        boolean reseed = false; // set to true to reseed all the data without using file cache
+        long timeSleep = 200;
         File folder = new File("leafly/");
         Document jsoup;
         WebDriver driver = null;
@@ -55,7 +57,7 @@ public class Scraper {
             TimeUnit.MILLISECONDS.sleep(1000);
         }
 
-        if(new File(folder, "data.html").exists()) {
+        if(new File(folder, "data.html").exists() && !reseed) {
             jsoup = Jsoup.parse(FileUtils.readFileToString(new File(folder, "data.html"), Charsets.UTF_8));
         } else {
             int cnt = 0;
@@ -89,7 +91,7 @@ public class Scraper {
                 String strainId = href.replace("/","_");
                 String overViewPage;
                 File overviewFile = new File(new File(folder, "overviews"), strainId);
-                if(!overviewFile.exists()) {
+                if(!overviewFile.exists() || reseed) {
                     driver.get("https://www.leafly.com" + href);
                     System.out.println("Strain: " + href);
                     TimeUnit.MILLISECONDS.sleep(timeSleep);
@@ -97,54 +99,87 @@ public class Scraper {
                 }
                 overViewPage = FileUtils.readFileToString(overviewFile, Charsets.UTF_8);
                 handleOverviews(strainId, overViewPage);
-                int cnt = 0;
-                File reviewFile = new File(new File(folder, "reviews"), href.replace("/", "_") + "_" + cnt);
-                WebElement element = null;
-                if(!reviewFile.exists()) {
-                    // now get reviews
-                    driver.get("https://www.leafly.com" + href + "/reviews?sort=date");
-                    try {
-                        element = driver.findElement(By.cssSelector("a.strain-reviews__load-more"));
-                    } catch (Exception e) {
-                        element = null;
-                    }
 
-                    FileUtils.writeStringToFile(reviewFile, driver.getPageSource(), Charsets.UTF_8);
-                }
-                String prevReview = null;
-                String reviewPage = FileUtils.readFileToString(reviewFile, Charsets.UTF_8);
-                handleReviews(strainId, reviewPage);
-                boolean seekNext = false;
-                while (seekNext || prevReview == null || !prevReview.equals(driver.getPageSource())) {
-                    boolean wasSeeking = seekNext;
-                    seekNext = false;
-                    cnt++;
-                    prevReview = driver.getPageSource();
-                    if(element!=null) {
-                        try {
-                            element.click();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    System.out.println("Strain "+n+" -> Page: " + cnt);
-                    reviewFile = new File(new File(folder, "reviews"), href.replace("/", "_") + "_" + cnt);
-                    if(!reviewFile.exists()) {
-                        if(!wasSeeking) {
+                {
+                    // photos
+                    File photoFile = new File(new File(folder, "photos"), href.replace("/", "_"));
+                    WebElement element = null;
+                    if(!photoFile.exists() || true) {
+                        // now get reviews
+                        driver.get("https://www.leafly.com" + href + "/photos");
+                        String prevPhotos = null;
+                        while (prevPhotos == null || !prevPhotos.equals(driver.getPageSource())) {
                             TimeUnit.MILLISECONDS.sleep(timeSleep);
-                            FileUtils.writeStringToFile(reviewFile, driver.getPageSource(), Charsets.UTF_8);
+                            prevPhotos = driver.getPageSource();
                             try {
-                                element = driver.findElement(By.cssSelector("a.strain-reviews__load-more"));
+                                JavascriptExecutor js = (JavascriptExecutor) driver;
+                                js.executeScript("window.scrollTo(0, document.body.scrollHeight)");
+                                TimeUnit.MILLISECONDS.sleep(timeSleep);
+                                element = driver.findElement(By.cssSelector("button.photos__load-more"));
+                                element.click();
+                                TimeUnit.MILLISECONDS.sleep(timeSleep);
+
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            System.out.println("Photos of strain: " + n);
+                        }
+                        FileUtils.writeStringToFile(photoFile, driver.getPageSource(), Charsets.UTF_8);
+                    }
+                    String photoPage = FileUtils.readFileToString(photoFile, Charsets.UTF_8);
+                    handlePhotos(strainId, photoPage);
+                }
+                {
+                    // reviews
+                    int cnt = 0;
+                    File reviewFile = new File(new File(folder, "reviews"), href.replace("/", "_") + "_" + cnt);
+                    WebElement element = null;
+                    if(!reviewFile.exists() || reseed) {
+                        // now get reviews
+                        driver.get("https://www.leafly.com" + href + "/reviews?sort=date");
+                        try {
+                            element = driver.findElement(By.cssSelector("a.strain-reviews__load-more"));
+                        } catch (Exception e) {
+                            element = null;
+                        }
+
+                        FileUtils.writeStringToFile(reviewFile, driver.getPageSource(), Charsets.UTF_8);
+                    }
+                    String prevReview = null;
+                    String reviewPage = FileUtils.readFileToString(reviewFile, Charsets.UTF_8);
+                    handleReviews(strainId, reviewPage);
+                    boolean seekNext = false;
+                    while (seekNext || prevReview == null || !prevReview.equals(driver.getPageSource())) {
+                        boolean wasSeeking = seekNext;
+                        seekNext = false;
+                        cnt++;
+                        prevReview = driver.getPageSource();
+                        if (element != null) {
+                            try {
+                                element.click();
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
                         }
-                    } else {
-                        seekNext = true;
-                    }
-                    if(reviewFile.exists()) {
-                        reviewPage = FileUtils.readFileToString(reviewFile, Charsets.UTF_8);
-                        handleReviews(strainId, reviewPage);
+                        System.out.println("Strain " + n + " -> Page: " + cnt);
+                        reviewFile = new File(new File(folder, "reviews"), href.replace("/", "_") + "_" + cnt);
+                        if (!reviewFile.exists() || reseed) {
+                            if (!wasSeeking) {
+                                TimeUnit.MILLISECONDS.sleep(timeSleep);
+                                FileUtils.writeStringToFile(reviewFile, driver.getPageSource(), Charsets.UTF_8);
+                                try {
+                                    element = driver.findElement(By.cssSelector("a.strain-reviews__load-more"));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        } else {
+                            seekNext = true;
+                        }
+                        if (reviewFile.exists()) {
+                            reviewPage = FileUtils.readFileToString(reviewFile, Charsets.UTF_8);
+                            handleReviews(strainId, reviewPage);
+                        }
                     }
                 }
             }
@@ -168,6 +203,10 @@ public class Scraper {
         for(Element review : reviews) {
        //     System.out.println("Found review for "+strainId+": "+review.html());
         }
+    }
+
+    private static void handlePhotos(String strainId, String reviewPage) throws Exception{
+        // num reviews, review text
     }
 
 }
