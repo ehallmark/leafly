@@ -40,8 +40,11 @@ public class Scraper {
     }
 
     public static void main(String[] args) throws Exception {
-        boolean reseed = false; // set to true to reseed all the data without using file cache
-        long timeSleep = 200;
+        run(false);
+    }
+
+    public static void run(boolean reseed) throws Exception {
+        long timeSleep = 1000;
         File folder = new File("leafly/");
         Document jsoup;
         WebDriver driver = null;
@@ -104,7 +107,7 @@ public class Scraper {
                     // photos
                     File photoFile = new File(new File(folder, "photos"), href.replace("/", "_"));
                     WebElement element = null;
-                    if(!photoFile.exists() || true) {
+                    if(!photoFile.exists() || reseed) {
                         // now get reviews
                         driver.get("https://www.leafly.com" + href + "/photos");
                         String prevPhotos = null;
