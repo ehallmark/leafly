@@ -280,7 +280,7 @@ public class Scraper {
             System.out.println("Downloading image: " + imageName);
             File imageFile = new File("leafly/images/" + imageName);
             if (!imageFile.exists()) {
-                FileUtils.copyURLToFile(new URL(src), );
+                FileUtils.copyURLToFile(new URL(src), imageFile);
             }
         }
     }
