@@ -357,9 +357,9 @@ public class Scraper {
         for(Element image : images) {
             String src = image.attr("src");
             String imageName = src.split("/reviews/")[1];
-            System.out.println("Downloading image: " + imageName);
             File imageFile = new File("leafly/images/" + imageName);
             if (!imageFile.exists()) {
+                System.out.println("Downloading image: " + imageName);
                 try {
                     FileUtils.copyURLToFile(new URL(src), imageFile);
                 } catch(Exception e) {
