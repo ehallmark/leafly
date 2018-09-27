@@ -18,6 +18,9 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +49,8 @@ public class Scraper {
     }
 
     public static void run(boolean reseed) throws Exception {
+        final Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost/leaflydb?user=postgres&password=password&tcpKeepAlive=true");
+        conn.setAutoCommit(false);
         long timeSleep = 1000;
         File folder = new File("leafly/");
         Document jsoup;
@@ -103,7 +108,7 @@ public class Scraper {
                     FileUtils.writeStringToFile(new File(new File(folder, "overviews"), strainId), driver.getPageSource(), Charsets.UTF_8);
                 }
                 overViewPage = FileUtils.readFileToString(overviewFile, Charsets.UTF_8);
-                handleOverviews(strainId, overViewPage);
+                handleOverviews(strainId, overViewPage, conn);
 
                 {
                     // photos
@@ -132,7 +137,7 @@ public class Scraper {
                         FileUtils.writeStringToFile(photoFile, driver.getPageSource(), Charsets.UTF_8);
                     }
                     String photoPage = FileUtils.readFileToString(photoFile, Charsets.UTF_8);
-                    handlePhotos(strainId, photoPage);
+                    handlePhotos(strainId, photoPage, conn);
                 }
                 {
                     // reviews
@@ -152,7 +157,7 @@ public class Scraper {
                     }
                     String prevReview = null;
                     String reviewPage = FileUtils.readFileToString(reviewFile, Charsets.UTF_8);
-                    handleReviews(strainId, reviewPage);
+                    handleReviews(strainId, reviewPage, conn);
                     boolean seekNext = false;
                     while (seekNext || prevReview == null || !prevReview.equals(driver.getPageSource())) {
                         boolean wasSeeking = seekNext;
@@ -183,16 +188,19 @@ public class Scraper {
                         }
                         if (reviewFile.exists()) {
                             reviewPage = FileUtils.readFileToString(reviewFile, Charsets.UTF_8);
-                            handleReviews(strainId, reviewPage);
+                            handleReviews(strainId, reviewPage, conn);
                         }
                     }
                 }
             }
+            conn.commit();
         }
+        conn.commit();
+        conn.close();
         driver.close();
     }
 
-    private static void handleOverviews(String strainId, String reviewPage) throws Exception {
+    private static void handleOverviews(String strainId, String reviewPage, Connection conn) throws Exception {
         Document document = Jsoup.parse(reviewPage);
         // name, type, rating, effects, flavors, description
         String type;
@@ -205,6 +213,7 @@ public class Scraper {
         } else {
             return;
         }
+        PreparedStatement ps = conn.prepareStatement("insert into strains (id,name,type,description,rating) values (?,?,?,?,?) on conflict do nothing");
         String name = null;
         String description = null;
         Double rating = null;
@@ -216,9 +225,9 @@ public class Scraper {
             name = descriptionElem.get(0).parent().previousElementSibling().text().replace("What is", "").replace("?", "").trim();
             description = descriptionElem.text();
         }
-        Elements ratingElem = document.select("div.rating-number");
+        Elements ratingElem = document.select(".rating-number");
         if(ratingElem.size()>0) {
-            rating = Double.valueOf(ratingElem.text());
+            rating = Double.valueOf(ratingElem.get(0).text());
         }
         Elements lineageElem = document.select("div.strain__lineage ul a[href]");
         for(Element line : lineageElem) {
@@ -228,9 +237,71 @@ public class Scraper {
         for(Element flavor : flavorsSection) {
             flavors.add(flavor.text().replaceAll("[0-9.]", "").trim());
         }
-        Elements effectsSection = document.select("div.m-strain-attributes div.m-histogram div.m-histogram-item-wrapper").not(".ng-hide");
-        for(Element effect : effectsSection) {
-            effects.add(effect.text().trim());
+        // check for test data image
+        Elements testDataSection = document.select(".strain__testGraph strain__dataTab img[src]");
+        if(testDataSection.size()>0) {
+            String src = testDataSection.get(0).attr("src");
+            String imageName = src.substring(src.lastIndexOf("/"+1));
+            System.out.println("Downloading image: " + imageName);
+            File imageFile = new File("leafly/fingerprints/" + imageName);
+            if (!imageFile.exists()) {
+                try {
+                    FileUtils.copyURLToFile(new URL(src), imageFile);
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            imageFile = new File("leafly/fingerprints/" + imageName);
+            if(imageFile.exists()) {
+                // process image
+            }
+        }
+        Elements effectsSections = document.select("div.m-strain-attributes div.m-histogram");
+        for(Element effectsSection: effectsSections) {
+            String effectType = effectsSection.attr("ng-show").split("===")[1].replace("'","");
+            for (Element effect : effectsSection.select("div.m-histogram-item-wrapper")) {
+                String effectName = effect.text().trim();
+                double effectScore = Double.valueOf(effect.select(".m-attr-bar").attr("style").replace("width:","").replace("%","").trim())/100.0;
+                effects.add(effectName);
+            }
+        }
+        if(name==null) {
+            return;
+        }
+        ps.setString(1, strainId);
+        ps.setString(2, name);
+        ps.setString(3, type);
+        ps.setString(4, description);
+        ps.setObject(5, rating);
+        ps.executeUpdate();
+        // flavors
+        ps.close();
+        if(flavors.size()>0) {
+            ps = conn.prepareStatement("insert into strain_flavors (strain_id, flavor) values (?,?) on conflict do nothing");
+            for (String flavor : flavors) {
+                ps.setString(1, strainId);
+                ps.setString(2, flavor);
+                ps.executeUpdate();
+            }
+            ps.close();
+        }
+        if(effects.size()>0) {
+            ps = conn.prepareStatement("insert into strain_effects (strain_id, effect) values (?,?) on conflict do nothing");
+            for (String effect : effects) {
+                ps.setString(1, strainId);
+                ps.setString(2, effect);
+                ps.executeUpdate();
+            }
+            ps.close();
+        }
+        if(lineage.size()>0) {
+            ps = conn.prepareStatement("insert into strain_lineage (strain_id, parent_strain_id) values (?,?) on conflict do nothing");
+            for (String parentStrainId : lineage) {
+                ps.setString(1, strainId);
+                ps.setString(2, parentStrainId);
+                ps.executeUpdate();
+            }
+            ps.close();
         }
         System.out.println("Name: "+name);
         System.out.println("Type: "+type);
@@ -239,17 +310,17 @@ public class Scraper {
         System.out.println("Flavors: "+String.join("; ", flavors));
         System.out.println("Effects: "+String.join("; ", effects));
         System.out.println("Lineage: "+String.join("; ", lineage));
-
     }
 
-    private static void handleReviews(String strainId, String reviewPage) throws Exception{
+    private static void handleReviews(String strainId, String reviewPage, Connection conn) throws Exception{
         if(!(strainId.startsWith("_indica") || strainId.startsWith("_sativa")||strainId.startsWith("_hybrid"))) {
             return;
         }
-
+        PreparedStatement ps = conn.prepareStatement("insert into strain_reviews (strain_id,review_num,review_text,review_rating,review_profile) values (?,?,?,?,?) on conflict do nothing");
         // author, rating, review text
         Document document = Jsoup.parse(reviewPage);
         Elements reviews = document.select(".strain-reviews__review-container li.page-item div.m-review");
+        int i = 1;
         for(Element review : reviews) {
        //     System.out.println("Found review for "+strainId+": "+review.html());
             String profile = review.select("a[href]").attr("href").replace("/profile/","").trim();
@@ -262,14 +333,22 @@ public class Scraper {
             System.out.println("Profile: "+profile);
             System.out.println("Rating: "+rating);
             System.out.println("Text: "+text);
-
+            ps.setString(1, strainId);
+            ps.setInt(2, i);
+            ps.setString(3, text);
+            ps.setObject(4, rating);
+            ps.setString(5, profile);
+            ps.executeUpdate();
+            i++;
         }
+        ps.close();
     }
 
-    private static void handlePhotos(String strainId, String photoPage) throws Exception{
+    private static void handlePhotos(String strainId, String photoPage, Connection conn) throws Exception{
         if(!(strainId.startsWith("_indica") || strainId.startsWith("_sativa")||strainId.startsWith("_hybrid"))) {
             return;
         }
+        PreparedStatement ps = conn.prepareStatement("insert into strain_photos (strain_id,photo_id,photo_url) values (?,?,?) on conflict do nothing");
 
         // download photo if isn't already saved
         Document document = Jsoup.parse(photoPage);
@@ -280,9 +359,21 @@ public class Scraper {
             System.out.println("Downloading image: " + imageName);
             File imageFile = new File("leafly/images/" + imageName);
             if (!imageFile.exists()) {
-                FileUtils.copyURLToFile(new URL(src), imageFile);
+                try {
+                    FileUtils.copyURLToFile(new URL(src), imageFile);
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            imageFile = new File("leafly/images/" + imageName);
+            if(imageFile.exists()) {
+                ps.setString(1, strainId);
+                ps.setString(2, imageName);
+                ps.setString(3, src);
+                ps.executeUpdate();
             }
         }
+        ps.close();
     }
 
 }
