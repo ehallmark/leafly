@@ -51,6 +51,25 @@ create table strain_effects (
 );
 
 
+drop table effects;
+create table effects (
+    effect text primary key
+);
+insert into effects ( select distinct effect from strain_effects );
+
+drop table flavors;
+create table flavors (
+    flavor text primary key
+);
+insert into flavors ( select distinct flavor from strain_flavors );
+
+drop table profiles;
+create table profiles (
+    profile text primary key
+);
+insert into profiles ( select distinct review_profile from strain_reviews );
+
+
 \copy strains to /home/ehallmark/Downloads/strains.csv delimiter ',' csv header;
 \copy strain_reviews to /home/ehallmark/Downloads/strain_reviews.csv delimiter ',' csv header;
 \copy strain_photos to /home/ehallmark/Downloads/strain_photos.csv delimiter ',' csv header;
