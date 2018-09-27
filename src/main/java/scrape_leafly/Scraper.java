@@ -238,7 +238,7 @@ public class Scraper {
             flavors.add(flavor.text().replaceAll("[0-9.]", "").trim());
         }
         // check for test data image
-        Elements testDataSection = document.select(".strain__testGraph strain__dataTab img[src]");
+        Elements testDataSection = document.select(".strain__testGraph img[src]");
         if(testDataSection.size()>0) {
             String src = testDataSection.get(0).attr("src");
             String imageName = src.substring(src.lastIndexOf("/"+1));
