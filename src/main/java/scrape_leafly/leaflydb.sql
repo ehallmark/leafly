@@ -69,6 +69,12 @@ create table profiles (
 );
 insert into profiles ( select distinct review_profile from strain_reviews );
 
+drop table parent_strains;
+create table parent_strains (
+    strain_id text primary key
+);
+insert into parent_strains ( select distinct parent_strain_id from strain_lineage );
+
 
 \copy strains to /home/ehallmark/Downloads/strains.csv delimiter ',' csv header;
 \copy strain_reviews to /home/ehallmark/Downloads/strain_reviews.csv delimiter ',' csv header;
