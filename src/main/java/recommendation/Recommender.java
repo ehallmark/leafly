@@ -14,5 +14,8 @@ public class Recommender {
         SimilarityEngine parentSim = new SimilarityEngine(Database.loadParentStrains());
         // get author rating strain triplets
 
+        // should add all parent lineage to parentSim (inversely weighted by distance)
+
+        // should add genetic fingerprint data when applicable
     }
 }
