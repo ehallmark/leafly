@@ -241,7 +241,8 @@ public class Scraper {
         Elements testDataSection = document.select(".strain__testGraph img[src]");
         if(testDataSection.size()>0) {
             String src = testDataSection.get(0).attr("src");
-            String imageName = src.substring(src.lastIndexOf("/"+1));
+            String[] split = src.split("/");
+            String imageName = split[split.length-1];
             System.out.println("Downloading image: " + imageName);
             File imageFile = new File("leafly/fingerprints/" + imageName);
             if (!imageFile.exists()) {
@@ -304,12 +305,12 @@ public class Scraper {
             ps.close();
         }
         System.out.println("Name: "+name);
-        System.out.println("Type: "+type);
-        System.out.println("Desc: "+description);
-        System.out.println("Rating: "+rating);
-        System.out.println("Flavors: "+String.join("; ", flavors));
-        System.out.println("Effects: "+String.join("; ", effects));
-        System.out.println("Lineage: "+String.join("; ", lineage));
+        //System.out.println("Type: "+type);
+        //System.out.println("Desc: "+description);
+        //System.out.println("Rating: "+rating);
+        //System.out.println("Flavors: "+String.join("; ", flavors));
+        //System.out.println("Effects: "+String.join("; ", effects));
+        //System.out.println("Lineage: "+String.join("; ", lineage));
     }
 
     private static void handleReviews(String strainId, String reviewPage, Connection conn) throws Exception{
@@ -329,10 +330,10 @@ public class Scraper {
             if(text.length()>2) {
                 text = text.substring(1, text.length() - 1);
             }
-            System.out.println("Name: "+strainId);
-            System.out.println("Profile: "+profile);
-            System.out.println("Rating: "+rating);
-            System.out.println("Text: "+text);
+           // System.out.println("Name: "+strainId);
+           // System.out.println("Profile: "+profile);
+           // System.out.println("Rating: "+rating);
+           // System.out.println("Text: "+text);
             ps.setString(1, strainId);
             ps.setInt(2, i);
             ps.setString(3, text);
