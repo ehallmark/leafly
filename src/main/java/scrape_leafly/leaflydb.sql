@@ -45,6 +45,8 @@ drop table strain_effects;
 create table strain_effects (
     strain_id text not null,
     effect text not null,
+    effect_type text not null,
+    effect_percent double precision not null,
     primary key(strain_id, effect)
 );
 

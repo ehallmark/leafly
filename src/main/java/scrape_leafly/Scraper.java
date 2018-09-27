@@ -217,7 +217,7 @@ public class Scraper {
         String name = null;
         String description = null;
         Double rating = null;
-        List<String> effects = new ArrayList<>();
+        List<Object[]> effects = new ArrayList<>();
         List<String> flavors = new ArrayList<>();
         List<String> lineage = new ArrayList<>();
         Elements descriptionElem = document.select("div.description-wrapper div.description");
@@ -243,9 +243,9 @@ public class Scraper {
             String src = testDataSection.get(0).attr("src");
             String[] split = src.split("/");
             String imageName = split[split.length-1];
-            System.out.println("Downloading image: " + imageName);
             File imageFile = new File("leafly/fingerprints/" + imageName);
             if (!imageFile.exists()) {
+                System.out.println("Downloading image: " + imageName);
                 try {
                     FileUtils.copyURLToFile(new URL(src), imageFile);
                 } catch(Exception e) {
@@ -263,7 +263,7 @@ public class Scraper {
             for (Element effect : effectsSection.select("div.m-histogram-item-wrapper")) {
                 String effectName = effect.text().trim();
                 double effectScore = Double.valueOf(effect.select(".m-attr-bar").attr("style").replace("width:","").replace("%","").trim())/100.0;
-                effects.add(effectName);
+                effects.add(new Object[]{effectName, effectType, effectScore});
             }
         }
         if(name==null) {
@@ -287,10 +287,12 @@ public class Scraper {
             ps.close();
         }
         if(effects.size()>0) {
-            ps = conn.prepareStatement("insert into strain_effects (strain_id, effect) values (?,?) on conflict do nothing");
-            for (String effect : effects) {
+            ps = conn.prepareStatement("insert into strain_effects (strain_id, effect, effect_type, effect_percent) values (?,?,?,?) on conflict do nothing");
+            for (Object[] effect : effects) {
                 ps.setString(1, strainId);
-                ps.setString(2, effect);
+                ps.setString(2, (String)effect[0]);
+                ps.setString(3, (String)effect[1]);
+                ps.setDouble(4, (Double)effect[2]);
                 ps.executeUpdate();
             }
             ps.close();
