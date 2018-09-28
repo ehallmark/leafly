@@ -1,6 +1,7 @@
 package recommendation;
 
 import com.google.common.base.Functions;
+import com.google.gson.Gson;
 import database.Database;
 import javafx.util.Pair;
 import lombok.NonNull;
@@ -78,7 +79,7 @@ public class Recommender {
         Map<String,Double> normalizedRatings = previousStrainRatings.entrySet()
                 .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue()-2.5));
         final Map<String,Double> rScores = reviewsModel.similarity(normalizedRatings);
-        return strains.stream().filter(previousStrainRatings::containsKey).map(strain->{
+        return strains.stream().filter(strain->!previousStrainRatings.containsKey(strain)).map(strain->{
             Map<String, Double> effects = effectData.getOrDefault(strain, Collections.emptyMap());
             Map<String, Double> flavors = flavorData.getOrDefault(strain, Collections.emptyList())
                     .stream().collect(Collectors.toMap(Object::toString, e->1d));
@@ -99,11 +100,26 @@ public class Recommender {
 
 
     public static void main(String[] args) throws Exception {
-
+        Random rand = new Random(2352);
         // should add genetic fingerprint data when applicable
 
         Recommender recommender = new Recommender();
 
         // iterate thru strains and randomly generate prior ratings to get new suggestions
+        List<String> strains = Database.loadStrains();
+
+        for(int i = 0; i < 1000; i++) {
+            int numPrior = rand.nextInt(10)+1;
+            Map<String,Double> ratings = new HashMap<>();
+            for(int j = 0; j < numPrior; j++) {
+                ratings.put(strains.get(rand.nextInt(strains.size())), 1d+rand.nextInt(4));
+            }
+            List<Pair<String,Double>> topRecommendations = recommender.topRecommendations(5, ratings);
+            System.out.println("----------------------------------------------------------------------------------");
+            System.out.println("Recommendation for: "+new Gson().toJson(ratings));
+            for(Pair<String,Double> recommendation : topRecommendations) {
+                System.out.println("Recommended "+recommendation.getKey()+" with confidence: "+recommendation.getValue());
+            }
+        }
     }
 }

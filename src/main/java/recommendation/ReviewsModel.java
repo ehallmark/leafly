@@ -38,7 +38,7 @@ public class ReviewsModel {
                 .map(author->{
                     // similarity of author to knownStrains
                     Map<String,Double> authorStrains = profileToReviewMap.getOrDefault(author, Collections.emptyList())
-                            .stream().collect(Collectors.toMap(p->p.getKey(), p->p.getValue().doubleValue()-2.5));
+                            .stream().collect(Collectors.groupingBy(p->p.getKey(), Collectors.summingDouble(p->p.getValue().doubleValue()-2.5)));
                     return new Pair<>(author,strainSim.similarity(knownStrainsNormalizedWeighted, authorStrains));
                 }).filter(p->p.getValue()>0)
                 .collect(Collectors.toMap(p->p.getKey(),p->p.getValue()));

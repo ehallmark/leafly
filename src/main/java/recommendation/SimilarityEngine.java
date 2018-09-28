@@ -38,7 +38,7 @@ public class SimilarityEngine {
             double val = labels2.get(lab);
             if(idx!=null && val>0) {
                 found2 = true;
-                v1[idx]=val;
+                v2[idx]=val;
             }
         }
         if(found1 && found2) {
