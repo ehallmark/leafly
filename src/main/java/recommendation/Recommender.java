@@ -47,7 +47,7 @@ public class Recommender {
         lineageGraph = new LineageGraph(Database.loadData("strain_lineage", "strain_id", "parent_strain_id"));
         flavorData = Database.loadMap("strain_flavors", "strain_id", "flavor");
         effectData = Database.loadMapWithValue("strain_effects", "strain_id", "effect", "effect_percent");
-        typeData = Database.loadMap("strains", "strain_id", "type");
+        typeData = Database.loadMap("strains", "id", "type");
         reviewsModel = new ReviewsModel(Database.loadData("strain_reviews", "strain_id", "review_rating", "review_profile"));
 
         System.out.println("Flavor data size: "+flavorData.size());
