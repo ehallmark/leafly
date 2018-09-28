@@ -10,6 +10,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Recommender {
+    private static final double DEFAULT_E_WEIGHT = 1d;
+    private static final double DEFAULT_F_WEIGHT = 1d;
+    private static final double DEFAULT_L_WEIGHT = 1d;
+    private static final double DEFAULT_R_WEIGHT = 1d;
+
+
     private SimilarityEngine effectSim;
     private SimilarityEngine flavorSim;
     private SimilarityEngine parentSim;
@@ -18,8 +24,14 @@ public class Recommender {
     private LineageGraph lineageGraph;
     private ReviewsModel reviewsModel;
     private List<String> strains;
-
+    // weights
+    private double[] weights;
     public Recommender() throws SQLException {
+        this(new double[]{DEFAULT_E_WEIGHT, DEFAULT_F_WEIGHT, DEFAULT_L_WEIGHT, DEFAULT_R_WEIGHT});
+    }
+
+    public Recommender(double[] weights) throws SQLException {
+        this.weights=weights;
         // initialize categorical data similarity engines
         effectSim = new SimilarityEngine(Database.loadEffects());
         flavorSim = new SimilarityEngine(Database.loadFlavors());
@@ -63,7 +75,9 @@ public class Recommender {
                 knownLineage.put(ancestorId, knownLineage.get(ancestorId)+1d);
             }
         });
-        final Map<String,Double> rScores = reviewsModel.similarity(previousStrainRatings);
+        Map<String,Double> normalizedRatings = previousStrainRatings.entrySet()
+                .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue()-2.5));
+        final Map<String,Double> rScores = reviewsModel.similarity(normalizedRatings);
         return strains.stream().filter(previousStrainRatings::containsKey).map(strain->{
             Map<String, Double> effects = effectData.getOrDefault(strain, Collections.emptyMap());
             Map<String, Double> flavors = flavorData.getOrDefault(strain, Collections.emptyList())
@@ -71,10 +85,10 @@ public class Recommender {
             Map<String,Double> lineage = lineageGraph.getAncestorsOf(strain)
                                 .stream().collect(Collectors.toMap(Functions.identity(),e->1d));
 
-            double eScore = effectSim.similarity(effects, knownEffects);
-            double fScore = flavorSim.similarity(flavors, knownFlavors);
-            double lScore = parentSim.similarity(lineage, knownLineage);
-            double rScore = rScores.getOrDefault(strain, 0d);
+            double eScore = effectSim.similarity(effects, knownEffects) * weights[0];
+            double fScore = flavorSim.similarity(flavors, knownFlavors) * weights[1];
+            double lScore = parentSim.similarity(lineage, knownLineage) * weights[2];
+            double rScore = rScores.getOrDefault(strain, 0d) * weights[3];
             double score = eScore + fScore + lScore + rScore;
             return new Pair<>(strain, score);
 
@@ -89,5 +103,7 @@ public class Recommender {
         // should add genetic fingerprint data when applicable
 
         Recommender recommender = new Recommender();
+
+        // iterate thru strains and randomly generate prior ratings to get new suggestions
     }
 }
