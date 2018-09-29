@@ -11,6 +11,7 @@ import lombok.Setter;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Recommender {
     private static final double DEFAULT_E_WEIGHT = 1d;
@@ -62,6 +63,60 @@ public class Recommender {
         System.out.println("Effect data size: "+effectData.size());
     }
 
+    public Recommendation recommendationScoreFor(@NonNull String _strain, @NonNull Map<String,Double> previousStrainRatings) {
+        Map<String,Double> knownFlavors = new HashMap<>();
+        Map<String,Double> knownEffects = new HashMap<>();
+        Map<String,Double> knownTypes = new HashMap<>();
+        Map<String,Double> knownLineage = new HashMap<>();
+        previousStrainRatings.forEach((strain, score)->{
+            Map<String,Double> prevEffects = effectData.getOrDefault(strain, Collections.emptyMap());
+            List<String> prevFlavors = flavorData.getOrDefault(strain, Collections.emptyList())
+                    .stream().map(Object::toString).collect(Collectors.toList());
+            List<String> prevTypes = typeData.getOrDefault(strain, Collections.emptyList())
+                    .stream().map(Object::toString).collect(Collectors.toList());
+            Collection<String> prevLineage = lineageGraph.getAncestorsOf(strain);
+            for(String effect : prevEffects.keySet()) {
+                knownEffects.putIfAbsent(effect, 0d);
+                knownEffects.put(effect, knownEffects.get(effect)+prevEffects.get(effect));
+            }
+            for(String flavor : prevFlavors) {
+                knownFlavors.putIfAbsent(flavor, 0d);
+                knownFlavors.put(flavor, knownFlavors.get(flavor)+1d);
+            }
+            for(String ancestorId : prevLineage) {
+                knownLineage.putIfAbsent(ancestorId, 0d);
+                knownLineage.put(ancestorId, knownLineage.get(ancestorId)+1d);
+            }
+            for(String type : prevTypes) {
+                knownTypes.putIfAbsent(type, 0d);
+                knownTypes.put(type, knownTypes.get(type)+1d);
+            }
+        });
+        Map<String, Double> effects = effectData.getOrDefault(_strain, Collections.emptyMap());
+        Map<String, Double> flavors = flavorData.getOrDefault(_strain, Collections.emptyList())
+                .stream().collect(Collectors.toMap(Object::toString, e->1d));
+        Map<String,Double> lineage = lineageGraph.getAncestorsOf(_strain)
+                .stream().collect(Collectors.toMap(Functions.identity(),e->1d));
+        Map<String,Double> type = typeData.getOrDefault(_strain, Collections.emptyList())
+                .stream().collect(Collectors.toMap(Object::toString, e->1d));
+        Map<String,Double> normalizedRatings = previousStrainRatings.entrySet()
+                .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue()-2.5));
+        final Map<String,Double> rScores = reviewsModel.similarity(normalizedRatings);
+        double eScore = effectSim.similarity(effects, knownEffects) * weights[0];
+        double fScore = flavorSim.similarity(flavors, knownFlavors) * weights[1];
+        double lScore = parentSim.similarity(lineage, knownLineage) * weights[2];
+        double rScore = rScores.getOrDefault(_strain, 0d) * weights[3];
+        double tScore = typeSim.similarity(type, knownTypes) * weights[4];
+        double score = eScore + fScore + lScore + rScore + tScore;
+        Recommendation recommendation = new Recommendation(_strain);
+        recommendation.setOverallSimilarity(score);
+        recommendation.setEffectSimilarity(eScore);
+        recommendation.setLineageSimilarity(lScore);
+        recommendation.setFlavorSimilarity(fScore);
+        recommendation.setTypeSimilarity(tScore);
+        recommendation.setReviewSimilarity(rScore);
+        return recommendation;
+    }
 
     public List<Recommendation> topRecommendations(int n, @NonNull Map<String,Double> previousStrainRatings) {
         if(previousStrainRatings.isEmpty()) {
@@ -99,7 +154,7 @@ public class Recommender {
         Map<String,Double> normalizedRatings = previousStrainRatings.entrySet()
                 .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue()-2.5));
         final Map<String,Double> rScores = reviewsModel.similarity(normalizedRatings);
-        return strains.stream().filter(strain->!previousStrainRatings.containsKey(strain)).map(strain->{
+        Stream<Recommendation> stream = strains.stream().filter(strain->!previousStrainRatings.containsKey(strain)).map(strain->{
             Map<String, Double> effects = effectData.getOrDefault(strain, Collections.emptyMap());
             Map<String, Double> flavors = flavorData.getOrDefault(strain, Collections.emptyList())
                     .stream().collect(Collectors.toMap(Object::toString, e->1d));
@@ -122,7 +177,12 @@ public class Recommender {
             recommendation.setReviewSimilarity(rScore);
             return recommendation;
 
-        }).sorted((e1,e2)->Double.compare(e2.getOverallSimilarity(),e1.getOverallSimilarity())).limit(n).collect(Collectors.toList());
+        });
+        if(n > 100) {
+            return stream.sorted((e1, e2) -> Double.compare(e2.getOverallSimilarity(), e1.getOverallSimilarity())).limit(n).collect(Collectors.toList());
+        } else {
+            return stream.collect(Collectors.toList());
+        }
     }
 
 
