@@ -55,7 +55,7 @@ public class Recommender {
     }
 
 
-    public List<Pair<String,Double>> topRecommendations(int n, @NonNull Map<String,Double> previousStrainRatings) {
+    public List<Recommendation> topRecommendations(int n, @NonNull Map<String,Double> previousStrainRatings) {
         if(previousStrainRatings.isEmpty()) {
             throw new RuntimeException("Unable to get recommendations without previous strain ratings...");
         }
@@ -105,9 +105,16 @@ public class Recommender {
             double rScore = rScores.getOrDefault(strain, 0d) * weights[3];
             double tScore = typeSim.similarity(type, knownTypes) * weights[4];
             double score = eScore + fScore + lScore + rScore + tScore;
-            return new Pair<>(strain, score);
+            Recommendation recommendation = new Recommendation(strain);
+            recommendation.setOverallSimilarity(score);
+            recommendation.setEffectSimilarity(eScore);
+            recommendation.setLineageSimilarity(lScore);
+            recommendation.setFlavorSimilarity(fScore);
+            recommendation.setTypeSimilarity(tScore);
+            recommendation.setReviewSimilarity(rScore);
+            return recommendation;
 
-        }).sorted((e1,e2)->e2.getValue().compareTo(e1.getValue())).limit(n).collect(Collectors.toList());
+        }).sorted((e1,e2)->Double.compare(e2.getOverallSimilarity(),e1.getOverallSimilarity())).limit(n).collect(Collectors.toList());
     }
 
 
@@ -116,7 +123,6 @@ public class Recommender {
     public static void main(String[] args) throws Exception {
         Random rand = new Random(2352);
         // should add genetic fingerprint data when applicable
-
         Recommender recommender = new Recommender();
 
         // iterate thru strains and randomly generate prior ratings to get new suggestions
@@ -128,11 +134,11 @@ public class Recommender {
             for(int j = 0; j < numPrior; j++) {
                 ratings.put(strains.get(rand.nextInt(strains.size())), 1d+rand.nextInt(4));
             }
-            List<Pair<String,Double>> topRecommendations = recommender.topRecommendations(5, ratings);
+            List<Recommendation> topRecommendations = recommender.topRecommendations(5, ratings);
             System.out.println("----------------------------------------------------------------------------------");
             System.out.println("Recommendation for: "+new Gson().toJson(ratings));
-            for(Pair<String,Double> recommendation : topRecommendations) {
-                System.out.println("Recommended "+recommendation.getKey()+" with confidence: "+recommendation.getValue());
+            for(Recommendation recommendation : topRecommendations) {
+                System.out.println("Recommended: "+recommendation.toString());
             }
         }
     }
