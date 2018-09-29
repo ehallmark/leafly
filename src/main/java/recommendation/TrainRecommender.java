@@ -4,10 +4,13 @@ import database.Database;
 import javafx.util.Pair;
 import smile.classification.LogisticRegression;
 
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class TrainRecommender {
+    private static final String LOGIT_FILE = "recommendation.logit";
+
     public static void main(String[] args) throws Exception {
         final int numTests = 2000;
         final Random rand = new Random(23521);
@@ -58,6 +61,14 @@ public class TrainRecommender {
 
         LogisticRegression logit = new LogisticRegression(x, y);
         System.out.println("Log likelihood: "+logit.loglikelihood());
+        try(ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(new File(LOGIT_FILE))))) {
+            oos.writeObject(logit);
+            oos.flush();
+            System.out.println("Saved...");
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+
 
 
         List<Map<String,Object>> testData = testProfiles.stream().flatMap(profile->profileData.get(profile).stream().map(pair->{
@@ -76,6 +87,14 @@ public class TrainRecommender {
         test(testProfiles, testReviewData, trainRecommender, logit);
     }
 
+    public static LogisticRegression loadLogitModel() {
+        try (ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(new File(LOGIT_FILE))))) {
+            return (LogisticRegression) ois.readObject();
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     private static double test(List<String> testProfiles, Map<String,List<Pair<String,Integer>>> testReviewData, Recommender trainRecommender, LogisticRegression logit) {
         int count = 0;

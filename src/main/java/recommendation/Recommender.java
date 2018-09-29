@@ -9,6 +9,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import smile.classification.LogisticRegression;
 
+import java.io.BufferedInputStream;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -118,13 +119,15 @@ public class Recommender {
         if(logit==null) {
             score = eScore + fScore + lScore + rScore + tScore;
         } else {
-            score = logit.predict(new double[]{
+            double[] post = new double[2];
+            logit.predict(new double[]{
                     recommendation.getEffectSimilarity(),
                     recommendation.getFlavorSimilarity(),
                     recommendation.getLineageSimilarity(),
                     recommendation.getReviewSimilarity(),
                     recommendation.getTypeSimilarity()
-            });
+            }, post);
+            score = post[1];
         }
         recommendation.setOverallSimilarity(score);
         return recommendation;
@@ -179,18 +182,31 @@ public class Recommender {
             double lScore = parentSim.similarity(lineage, knownLineage) * weights[2];
             double rScore = rScores.getOrDefault(strain, 0d) * weights[3];
             double tScore = typeSim.similarity(type, knownTypes) * weights[4];
-            double score = eScore + fScore + lScore + rScore + tScore;
             Recommendation recommendation = new Recommendation(strain);
             recommendation.setEffectSimilarity(eScore);
             recommendation.setLineageSimilarity(lScore);
             recommendation.setFlavorSimilarity(fScore);
             recommendation.setTypeSimilarity(tScore);
             recommendation.setReviewSimilarity(rScore);
+            double score;
+            if(logit==null) {
+                score = eScore + fScore + lScore + rScore + tScore;
+            } else {
+                double[] post = new double[2];
+                logit.predict(new double[]{
+                        recommendation.getEffectSimilarity(),
+                        recommendation.getFlavorSimilarity(),
+                        recommendation.getLineageSimilarity(),
+                        recommendation.getReviewSimilarity(),
+                        recommendation.getTypeSimilarity()
+                }, post);
+                score = post[1];
+            }
             recommendation.setOverallSimilarity(score);
             return recommendation;
 
         });
-        if(n > 100) {
+        if(n > 0) {
             return stream.sorted((e1, e2) -> Double.compare(e2.getOverallSimilarity(), e1.getOverallSimilarity())).limit(n).collect(Collectors.toList());
         } else {
             return stream.collect(Collectors.toList());
@@ -202,6 +218,7 @@ public class Recommender {
 
     public static void main(String[] args) throws Exception {
         Random rand = new Random(2352);
+        LogisticRegression logit = TrainRecommender.loadLogitModel();
         // should add genetic fingerprint data when applicable
         Recommender recommender = new Recommender();
 
@@ -214,7 +231,7 @@ public class Recommender {
             for(int j = 0; j < numPrior; j++) {
                 ratings.put(strains.get(rand.nextInt(strains.size())), 1d+rand.nextInt(4));
             }
-            List<Recommendation> topRecommendations = recommender.topRecommendations(5, ratings, null);
+            List<Recommendation> topRecommendations = recommender.topRecommendations(5, ratings, logit);
             System.out.println("----------------------------------------------------------------------------------");
             System.out.println("Recommendation for: "+new Gson().toJson(ratings));
             for(Recommendation recommendation : topRecommendations) {
