@@ -9,7 +9,12 @@ import java.util.stream.Collectors;
 public class SimilarityEngine {
     private Map<String, Integer> indexMap;
     private double[][] featureSimMatrix;
-    
+
+
+    public SimilarityEngine(Collection<String> labels) {
+        this(labels, null);
+    }
+
     public SimilarityEngine(Collection<String> labels, double[][] featureSimMatrix) {
         AtomicInteger idx = new AtomicInteger(0);
         this.indexMap = labels.stream().distinct()
@@ -97,4 +102,10 @@ public class SimilarityEngine {
         return labels.stream().distinct().collect(Collectors.toMap(l->l,l->1d));
     }
 
+
+    public static final double[][] TYPE_SIMILARITY_MATRIX = new double[][]{
+            new double[]{1., .5, .5}, // hybrid
+            new double[]{.5, 1., 0.}, // indica
+            new double[]{.5, 0., 1.}  // sativa
+    };
 }

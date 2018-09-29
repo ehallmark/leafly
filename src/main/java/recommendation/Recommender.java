@@ -22,7 +22,6 @@ public class Recommender {
     private static final double DEFAULT_R_WEIGHT = 1d;
     private static final double DEFAULT_T_WEIGHT = 1d;
 
-
     private SimilarityEngine effectSim;
     private SimilarityEngine typeSim;
     private SimilarityEngine flavorSim;
@@ -49,7 +48,7 @@ public class Recommender {
         this.weights=weights;
         // initialize categorical data similarity engines
         effectSim = new SimilarityEngine(Database.loadEffects());
-        typeSim = new SimilarityEngine(Arrays.asList("Hybrid", "Indica", "Sativa"));
+        typeSim = new SimilarityEngine(Arrays.asList("Hybrid", "Indica", "Sativa"), SimilarityEngine.TYPE_SIMILARITY_MATRIX);
         flavorSim = new SimilarityEngine(Database.loadFlavors());
         strains = Database.loadStrains();
         parentSim = new SimilarityEngine(strains);
@@ -134,10 +133,14 @@ public class Recommender {
     }
 
     public List<Recommendation> topRecommendations(int n, @NonNull Map<String,Double> previousStrainRatings, LogisticRegression logit) {
+        Set<String> previousStrains = new HashSet<>(previousStrainRatings.keySet());
+        previousStrainRatings = previousStrainRatings.entrySet().stream()
+                .filter(e->e.getValue()>=3.5)
+                .collect(Collectors.toMap(e->e.getKey(), e->e.getValue()));
+
         if(previousStrainRatings.isEmpty()) {
             throw new RuntimeException("Unable to get recommendations without previous strain ratings...");
         }
-
         Map<String,Double> knownFlavors = new HashMap<>();
         Map<String,Double> knownEffects = new HashMap<>();
         Map<String,Double> knownTypes = new HashMap<>();
@@ -169,7 +172,7 @@ public class Recommender {
         Map<String,Double> normalizedRatings = previousStrainRatings.entrySet()
                 .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue()-2.5));
         final Map<String,Double> rScores = reviewsModel.similarity(normalizedRatings);
-        Stream<Recommendation> stream = strains.stream().filter(strain->!previousStrainRatings.containsKey(strain)).map(strain->{
+        Stream<Recommendation> stream = strains.stream().filter(strain->!previousStrains.contains(strain)).map(strain->{
             Map<String, Double> effects = effectData.getOrDefault(strain, Collections.emptyMap());
             Map<String, Double> flavors = flavorData.getOrDefault(strain, Collections.emptyList())
                     .stream().collect(Collectors.toMap(Object::toString, e->1d));
@@ -213,9 +216,6 @@ public class Recommender {
         }
     }
 
-
-
-
     public static void main(String[] args) throws Exception {
         Random rand = new Random(2352);
         LogisticRegression logit = TrainRecommender.loadLogitModel();
@@ -229,7 +229,7 @@ public class Recommender {
             int numPrior = rand.nextInt(10)+1;
             Map<String,Double> ratings = new HashMap<>();
             for(int j = 0; j < numPrior; j++) {
-                ratings.put(strains.get(rand.nextInt(strains.size())), 1d+rand.nextInt(4));
+                ratings.put(strains.get(rand.nextInt(strains.size())), 4d+rand.nextInt(1));
             }
             List<Recommendation> topRecommendations = recommender.topRecommendations(5, ratings, logit);
             System.out.println("----------------------------------------------------------------------------------");
