@@ -24,12 +24,13 @@ public class ReviewsModel {
             profileToReviewMap.putIfAbsent(profile, new ArrayList<>());
             profileToReviewMap.get(profile).add(new Pair<>(strain, rating));
         }
+
         strainSim = new SimilarityEngine(strainToReviewMap.keySet());
     }
 
 
     public Map<String,Double> similarity(Map<String,Double> knownStrainsNormalizedWeighted) {
-        reviewSizeMap = null;
+        reviewSizeMap = new HashMap<>();
         Map<String,Double> similarityMap = new HashMap<>();
 
         // get reviewers of known strains
@@ -67,7 +68,6 @@ public class ReviewsModel {
                     }
                     return  tmp;
                 }));
-        reviewSizeMap = new HashMap<>();
         // rank scores
         for(String strain : otherStrains) {
             double sim = profileSimilarityMap.entrySet().stream().mapToDouble(e->{
@@ -78,10 +78,10 @@ public class ReviewsModel {
                 int s = reviewScores.stream()
                         .mapToInt(p->p)
                         .sum();
-                reviewSizeMap.put(strain, reviewScores.size());
                 return authorSim * s;
             }).average().orElse(0d);
             similarityMap.put(strain, sim);
+            reviewSizeMap.put(strain, profileSimilarityMap.size());
         }
         return similarityMap;
     }

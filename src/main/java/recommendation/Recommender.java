@@ -32,9 +32,11 @@ public class Recommender {
 
     public Recommender(List<Map<String,Object>> reviewData) throws SQLException {
         // initialize categorical data similarity engines
-        effectSim = new SimilarityEngine(Database.loadEffects());
+        List<String> effects = Database.loadEffects().stream().distinct().sorted().collect(Collectors.toList());
+        List<String> flavors = Database.loadFlavors().stream().distinct().sorted().collect(Collectors.toList());
+        effectSim = new SimilarityEngine(effects, Database.loadSimilarityMatrix("strain_effects", "strain_id", "effect", effects));
         typeSim = new SimilarityEngine(Arrays.asList("Hybrid", "Indica", "Sativa"), SimilarityEngine.TYPE_SIMILARITY_MATRIX);
-        flavorSim = new SimilarityEngine(Database.loadFlavors());
+        flavorSim = new SimilarityEngine(flavors, Database.loadSimilarityMatrix("strain_flavors", "strain_id", "flavor", flavors));
         strains = Database.loadStrains();
         parentSim = new SimilarityEngine(strains);
 
