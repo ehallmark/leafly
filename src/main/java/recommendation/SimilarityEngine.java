@@ -104,8 +104,8 @@ public class SimilarityEngine {
 
 
     public static final double[][] TYPE_SIMILARITY_MATRIX = new double[][]{
-            new double[]{1., .5, .5}, // hybrid
-            new double[]{.5, 1., 0.}, // indica
-            new double[]{.5, 0., 1.}  // sativa
+            new double[]{1., .25, .25}, // hybrid
+            new double[]{.25, 1., 0.}, // indica
+            new double[]{.25, 0., 1.}  // sativa
     };
 }
