@@ -60,14 +60,12 @@ public class Database {
                 Object xi = list.get(i);
                 for(int j = i+1; j < list.size(); j++) {
                     Object xj = list.get(j);
-                    //if(!xi.equals(xj)) {
-                        int idx1 = labelIdxMap.get((String)xi);
-                        int idx2 = labelIdxMap.get((String)xj);
-                        matrix[idx1][idx2] ++;
-                        matrix[idx2][idx1] ++;
-                        counts[idx1] ++;
-                        counts[idx2] ++;
-                    //}
+                    int idx1 = labelIdxMap.get((String)xi);
+                    int idx2 = labelIdxMap.get((String)xj);
+                    matrix[idx1][idx2] ++;
+                    matrix[idx2][idx1] ++;
+                    counts[idx1] ++;
+                    counts[idx2] ++;
                 }
             }
         });
