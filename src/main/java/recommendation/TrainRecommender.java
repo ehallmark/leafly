@@ -42,6 +42,12 @@ public class TrainRecommender {
         System.out.println("Num test: "+testData.size());
 
         Recommender trainRecommender = new Recommender(trainData);
+
+        test(testProfiles, testReviewData, trainRecommender);
+    }
+
+
+    private static double test(List<String> testProfiles, Map<String,List<Pair<String,Integer>>> testReviewData, Recommender trainRecommender) {
         int count = 0;
         double score = 0d;
         for(String testProfile : testProfiles) {
@@ -68,6 +74,7 @@ public class TrainRecommender {
             }
         }
         System.out.println("Score: "+score/count + " (Count: "+count+")");
+        return score/count;
     }
 }
 
