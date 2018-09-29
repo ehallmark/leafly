@@ -51,21 +51,23 @@ public class TrainRecommender {
                 data = new ArrayList<>(data);
                 data.sort(Comparator.comparingInt(d->d.getValue()));
                 Pair<String,Integer> best = data.remove(data.size()-1);
-                Map<String, Double> ratings = data.stream().collect(Collectors.groupingBy(e->e.getKey(),Collectors.averagingDouble(e->e.getValue())));
-                List<Recommendation> recommendations = trainRecommender.topRecommendations(10, ratings);
-                boolean found = false;
-                for(Recommendation recommendation : recommendations) {
-                    if(recommendation.getStrain().equals(best.getKey())) {
-                        found = true;
+                if(best.getValue()>=4) {
+                    Map<String, Double> ratings = data.stream().collect(Collectors.groupingBy(e -> e.getKey(), Collectors.averagingDouble(e -> e.getValue())));
+                    List<Recommendation> recommendations = trainRecommender.topRecommendations(10, ratings);
+                    boolean found = false;
+                    for (Recommendation recommendation : recommendations) {
+                        if (recommendation.getStrain().equals(best.getKey())) {
+                            found = true;
+                        }
                     }
+                    if (found) {
+                        score++;
+                    }
+                    count++;
                 }
-                if(found) {
-                    score ++;
-                }
-                count++;
             }
         }
-        System.out.println("Score: "+score/count);
+        System.out.println("Score: "+score/count + " (Count: "+count+")");
     }
 }
 
