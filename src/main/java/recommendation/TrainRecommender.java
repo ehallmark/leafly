@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 public class TrainRecommender {
     public static void main(String[] args) throws Exception {
-        final int numTests = 3000;
+        final int numTests = 5000;
         final List<Map<String,Object>> allReviewData = new ArrayList<>(Database.loadData("strain_reviews", "strain_id", "review_rating", "review_profile"));
         Map<String, List<Pair<String,Integer>>> profileData = new ReviewsModel(allReviewData).getProfileToReviewMap();
         List<String> allProfiles = new ArrayList<>(profileData.keySet());
