@@ -1,12 +1,15 @@
 package recommendation;
 
 import javafx.util.Pair;
+import lombok.Getter;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class ReviewsModel {
+    @Getter
     private Map<String, List<Pair<String,Integer>>> strainToReviewMap = new HashMap<>();
+    @Getter
     private Map<String, List<Pair<String,Integer>>> profileToReviewMap = new HashMap<>();
     private SimilarityEngine strainSim;
     public ReviewsModel(List<Map<String,Object>> data) {
