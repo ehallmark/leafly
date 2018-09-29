@@ -10,11 +10,8 @@ public class TrainRecommender {
     public static void main(String[] args) throws Exception {
         final int numTests = 3000;
         final List<Map<String,Object>> allReviewData = new ArrayList<>(Database.loadData("strain_reviews", "strain_id", "review_rating", "review_profile"));
-
         Map<String, List<Pair<String,Integer>>> profileData = new ReviewsModel(allReviewData).getProfileToReviewMap();
-
         List<String> allProfiles = new ArrayList<>(profileData.keySet());
-
         Collections.shuffle(allProfiles, new Random(2352));
 
         final List<String> trainProfiles = allProfiles.subList(0, allProfiles.size()-numTests);
@@ -39,12 +36,38 @@ public class TrainRecommender {
             return map;
         })).collect(Collectors.toList());
 
+        Map<String,List<Pair<String,Integer>>> testReviewData = new ReviewsModel(testData).getProfileToReviewMap();
 
         System.out.println("Num train: "+trainData.size());
         System.out.println("Num test: "+testData.size());
 
         Recommender trainRecommender = new Recommender(trainData);
-
-        
+        int count = 0;
+        double score = 0d;
+        for(String testProfile : testProfiles) {
+            List<Pair<String,Integer>> data = testReviewData.get(testProfile);
+            if(data!=null && data.size()>1) {
+                // find best rating
+                data = new ArrayList<>(data);
+                data.sort(Comparator.comparingInt(d->d.getValue()));
+                Pair<String,Integer> best = data.remove(data.size()-1);
+                Map<String, Double> ratings = data.stream().collect(Collectors.groupingBy(e->e.getKey(),Collectors.averagingDouble(e->e.getValue())));
+                List<Recommendation> recommendations = trainRecommender.topRecommendations(10, ratings);
+                boolean found = false;
+                for(Recommendation recommendation : recommendations) {
+                    if(recommendation.getStrain().equals(best.getKey())) {
+                        found = true;
+                    }
+                }
+                if(found) {
+                    score ++;
+                }
+                count++;
+            }
+        }
+        System.out.println("Score: "+score/count);
     }
 }
+
+
+
