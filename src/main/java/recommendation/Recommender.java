@@ -7,6 +7,7 @@ import javafx.util.Pair;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import smile.classification.LogisticRegression;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -63,7 +64,7 @@ public class Recommender {
         System.out.println("Effect data size: "+effectData.size());
     }
 
-    public Recommendation recommendationScoreFor(@NonNull String _strain, @NonNull Map<String,Double> previousStrainRatings) {
+    public Recommendation recommendationScoreFor(@NonNull String _strain, @NonNull Map<String,Double> previousStrainRatings, LogisticRegression logit) {
         Map<String,Double> knownFlavors = new HashMap<>();
         Map<String,Double> knownEffects = new HashMap<>();
         Map<String,Double> knownTypes = new HashMap<>();
@@ -107,18 +108,29 @@ public class Recommender {
         double lScore = parentSim.similarity(lineage, knownLineage) * weights[2];
         double rScore = rScores.getOrDefault(_strain, 0d) * weights[3];
         double tScore = typeSim.similarity(type, knownTypes) * weights[4];
-        double score = eScore + fScore + lScore + rScore + tScore;
         Recommendation recommendation = new Recommendation(_strain);
-        recommendation.setOverallSimilarity(score);
         recommendation.setEffectSimilarity(eScore);
         recommendation.setLineageSimilarity(lScore);
         recommendation.setFlavorSimilarity(fScore);
         recommendation.setTypeSimilarity(tScore);
         recommendation.setReviewSimilarity(rScore);
+        double score;
+        if(logit==null) {
+            score = eScore + fScore + lScore + rScore + tScore;
+        } else {
+            score = logit.predict(new double[]{
+                    recommendation.getEffectSimilarity(),
+                    recommendation.getFlavorSimilarity(),
+                    recommendation.getLineageSimilarity(),
+                    recommendation.getReviewSimilarity(),
+                    recommendation.getTypeSimilarity()
+            });
+        }
+        recommendation.setOverallSimilarity(score);
         return recommendation;
     }
 
-    public List<Recommendation> topRecommendations(int n, @NonNull Map<String,Double> previousStrainRatings) {
+    public List<Recommendation> topRecommendations(int n, @NonNull Map<String,Double> previousStrainRatings, LogisticRegression logit) {
         if(previousStrainRatings.isEmpty()) {
             throw new RuntimeException("Unable to get recommendations without previous strain ratings...");
         }
@@ -169,12 +181,12 @@ public class Recommender {
             double tScore = typeSim.similarity(type, knownTypes) * weights[4];
             double score = eScore + fScore + lScore + rScore + tScore;
             Recommendation recommendation = new Recommendation(strain);
-            recommendation.setOverallSimilarity(score);
             recommendation.setEffectSimilarity(eScore);
             recommendation.setLineageSimilarity(lScore);
             recommendation.setFlavorSimilarity(fScore);
             recommendation.setTypeSimilarity(tScore);
             recommendation.setReviewSimilarity(rScore);
+            recommendation.setOverallSimilarity(score);
             return recommendation;
 
         });
@@ -202,7 +214,7 @@ public class Recommender {
             for(int j = 0; j < numPrior; j++) {
                 ratings.put(strains.get(rand.nextInt(strains.size())), 1d+rand.nextInt(4));
             }
-            List<Recommendation> topRecommendations = recommender.topRecommendations(5, ratings);
+            List<Recommendation> topRecommendations = recommender.topRecommendations(5, ratings, null);
             System.out.println("----------------------------------------------------------------------------------");
             System.out.println("Recommendation for: "+new Gson().toJson(ratings));
             for(Recommendation recommendation : topRecommendations) {

@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class TrainRecommender {
     public static void main(String[] args) throws Exception {
-        final int numTests = 5000;
+        final int numTests = 2000;
         final Random rand = new Random(23521);
         final List<Map<String,Object>> allReviewData = new ArrayList<>(Database.loadData("strain_reviews", "strain_id", "review_rating", "review_profile"));
         Map<String, List<Pair<String,Integer>>> profileData = new ReviewsModel(allReviewData).getProfileToReviewMap();
@@ -45,8 +45,8 @@ public class TrainRecommender {
             List<Pair<String,Integer>> data = trainReviewData.get(profile);
             Pair<String,Integer> best = data.remove(rand.nextInt(data.size()));
             Map<String, Double> ratings = data.stream().collect(Collectors.groupingBy(e -> e.getKey(), Collectors.averagingDouble(e -> e.getValue())));
-            Recommendation recommendation = trainRecommender.recommendationScoreFor(best.getKey(), ratings);
-            y[i] = best.getValue().doubleValue()>=4 ? 1 : 0;
+            Recommendation recommendation = trainRecommender.recommendationScoreFor(best.getKey(), ratings, null);
+            y[i] = best.getValue().doubleValue()>=5 ? 1 : 0;
             x[i] = new double[]{
                     recommendation.getEffectSimilarity(),
                     recommendation.getFlavorSimilarity(),
@@ -58,7 +58,6 @@ public class TrainRecommender {
 
         LogisticRegression logit = new LogisticRegression(x, y);
         System.out.println("Log likelihood: "+logit.loglikelihood());
-
 
 
         List<Map<String,Object>> testData = testProfiles.stream().flatMap(profile->profileData.get(profile).stream().map(pair->{
@@ -88,16 +87,9 @@ public class TrainRecommender {
                 // find best rating
                 Pair<String,Integer> best = data.remove(rand.nextInt(data.size()));
                 Map<String, Double> ratings = data.stream().collect(Collectors.groupingBy(e -> e.getKey(), Collectors.averagingDouble(e -> e.getValue())));
-                Recommendation recommendation = trainRecommender.recommendationScoreFor(best.getKey(), ratings);
-                double prediction = logit.predict(new double[]{
-                        recommendation.getEffectSimilarity(),
-                        recommendation.getFlavorSimilarity(),
-                        recommendation.getLineageSimilarity(),
-                        recommendation.getReviewSimilarity(),
-                        recommendation.getTypeSimilarity()
-                });
-                double target = best.getValue() >= 4 ? 1.0 : 0.0;
-                score += Math.abs(target-prediction);
+                Recommendation recommendation = trainRecommender.recommendationScoreFor(best.getKey(), ratings, logit);
+                double target = best.getValue()>=5 ? 1.0 : 0.0;
+                score+=Math.abs(target - recommendation.getOverallSimilarity());
                 count++;
             }
         }
