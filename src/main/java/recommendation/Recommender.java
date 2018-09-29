@@ -4,7 +4,9 @@ import com.google.common.base.Functions;
 import com.google.gson.Gson;
 import database.Database;
 import javafx.util.Pair;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -29,12 +31,18 @@ public class Recommender {
     private ReviewsModel reviewsModel;
     private List<String> strains;
     // weights
+    @Setter @Getter
     private double[] weights;
+
     public Recommender() throws SQLException {
-        this(new double[]{DEFAULT_E_WEIGHT, DEFAULT_F_WEIGHT, DEFAULT_L_WEIGHT, DEFAULT_R_WEIGHT, DEFAULT_T_WEIGHT});
+        this(Database.loadData("strain_reviews", "strain_id", "review_rating", "review_profile"));
     }
 
-    public Recommender(double[] weights) throws SQLException {
+    public Recommender(List<Map<String,Object>> reviewData) throws SQLException {
+        this(new double[]{DEFAULT_E_WEIGHT, DEFAULT_F_WEIGHT, DEFAULT_L_WEIGHT, DEFAULT_R_WEIGHT, DEFAULT_T_WEIGHT}, reviewData);
+    }
+
+    public Recommender(double[] weights, List<Map<String,Object>> reviewData) throws SQLException {
         this.weights=weights;
         // initialize categorical data similarity engines
         effectSim = new SimilarityEngine(Database.loadEffects());
@@ -48,7 +56,7 @@ public class Recommender {
         flavorData = Database.loadMap("strain_flavors", "strain_id", "flavor");
         effectData = Database.loadMapWithValue("strain_effects", "strain_id", "effect", "effect_percent");
         typeData = Database.loadMap("strains", "id", "type");
-        reviewsModel = new ReviewsModel(Database.loadData("strain_reviews", "strain_id", "review_rating", "review_profile"));
+        reviewsModel = new ReviewsModel(reviewData);
 
         System.out.println("Flavor data size: "+flavorData.size());
         System.out.println("Effect data size: "+effectData.size());
