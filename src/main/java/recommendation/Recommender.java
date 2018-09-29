@@ -16,12 +16,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Recommender {
-    private static final double DEFAULT_E_WEIGHT = 1d;
-    private static final double DEFAULT_F_WEIGHT = 1d;
-    private static final double DEFAULT_L_WEIGHT = 1d;
-    private static final double DEFAULT_R_WEIGHT = 1d;
-    private static final double DEFAULT_T_WEIGHT = 1d;
-
     private SimilarityEngine effectSim;
     private SimilarityEngine typeSim;
     private SimilarityEngine flavorSim;
@@ -32,20 +26,11 @@ public class Recommender {
     private LineageGraph lineageGraph;
     private ReviewsModel reviewsModel;
     private List<String> strains;
-    // weights
-    @Setter @Getter
-    private double[] weights;
-
     public Recommender() throws SQLException {
         this(Database.loadData("strain_reviews", "strain_id", "review_rating", "review_profile"));
     }
 
     public Recommender(List<Map<String,Object>> reviewData) throws SQLException {
-        this(new double[]{DEFAULT_E_WEIGHT, DEFAULT_F_WEIGHT, DEFAULT_L_WEIGHT, DEFAULT_R_WEIGHT, DEFAULT_T_WEIGHT}, reviewData);
-    }
-
-    public Recommender(double[] weights, List<Map<String,Object>> reviewData) throws SQLException {
-        this.weights=weights;
         // initialize categorical data similarity engines
         effectSim = new SimilarityEngine(Database.loadEffects());
         typeSim = new SimilarityEngine(Arrays.asList("Hybrid", "Indica", "Sativa"), SimilarityEngine.TYPE_SIMILARITY_MATRIX);
@@ -93,6 +78,18 @@ public class Recommender {
                 knownTypes.put(type, knownTypes.get(type)+1d);
             }
         });
+        Map<String,Double> normalizedRatings = previousStrainRatings.entrySet()
+                .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue()-2.5));
+        final Map<String,Double> rScores = reviewsModel.similarity(normalizedRatings);
+        Map<String,Integer> rcScores = reviewsModel.getReviewSizeMap();
+        return recommendationScoreFor(_strain, logit,
+                knownEffects, knownFlavors, knownLineage, knownTypes, rScores, rcScores);
+    }
+
+    public Recommendation recommendationScoreFor(@NonNull String _strain, LogisticRegression logit,
+                                                 Map<String,Double> knownEffects, Map<String,Double> knownFlavors, Map<String,Double> knownLineage,
+                                                 Map<String,Double> knownTypes, Map<String,Double> rScores, Map<String,Integer> rcScores) {
+
         Map<String, Double> effects = effectData.getOrDefault(_strain, Collections.emptyMap());
         Map<String, Double> flavors = flavorData.getOrDefault(_strain, Collections.emptyList())
                 .stream().collect(Collectors.toMap(Object::toString, e->1d));
@@ -100,20 +97,20 @@ public class Recommender {
                 .stream().collect(Collectors.toMap(Functions.identity(),e->1d));
         Map<String,Double> type = typeData.getOrDefault(_strain, Collections.emptyList())
                 .stream().collect(Collectors.toMap(Object::toString, e->1d));
-        Map<String,Double> normalizedRatings = previousStrainRatings.entrySet()
-                .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue()-2.5));
-        final Map<String,Double> rScores = reviewsModel.similarity(normalizedRatings);
-        double eScore = effectSim.similarity(effects, knownEffects) * weights[0];
-        double fScore = flavorSim.similarity(flavors, knownFlavors) * weights[1];
-        double lScore = parentSim.similarity(lineage, knownLineage) * weights[2];
-        double rScore = rScores.getOrDefault(_strain, 0d) * weights[3];
-        double tScore = typeSim.similarity(type, knownTypes) * weights[4];
+
+        double eScore = effectSim.similarity(effects, knownEffects);
+        double fScore = flavorSim.similarity(flavors, knownFlavors);
+        double lScore = parentSim.similarity(lineage, knownLineage);
+        double rScore = rScores.getOrDefault(_strain, 0d);
+        double rcScore = rcScores.getOrDefault(_strain, 0);
+        double tScore = typeSim.similarity(type, knownTypes);
         Recommendation recommendation = new Recommendation(_strain);
         recommendation.setEffectSimilarity(eScore);
         recommendation.setLineageSimilarity(lScore);
         recommendation.setFlavorSimilarity(fScore);
         recommendation.setTypeSimilarity(tScore);
         recommendation.setReviewSimilarity(rScore);
+        recommendation.setNumReviews(rcScore);
         double score;
         if(logit==null) {
             score = eScore + fScore + lScore + rScore + tScore;
@@ -124,7 +121,8 @@ public class Recommender {
                     recommendation.getFlavorSimilarity(),
                     recommendation.getLineageSimilarity(),
                     recommendation.getReviewSimilarity(),
-                    recommendation.getTypeSimilarity()
+                    recommendation.getTypeSimilarity(),
+                    recommendation.getNumReviews()
             }, post);
             score = post[1];
         }
@@ -172,42 +170,10 @@ public class Recommender {
         Map<String,Double> normalizedRatings = previousStrainRatings.entrySet()
                 .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue()-2.5));
         final Map<String,Double> rScores = reviewsModel.similarity(normalizedRatings);
-        Stream<Recommendation> stream = strains.stream().filter(strain->!previousStrains.contains(strain)).map(strain->{
-            Map<String, Double> effects = effectData.getOrDefault(strain, Collections.emptyMap());
-            Map<String, Double> flavors = flavorData.getOrDefault(strain, Collections.emptyList())
-                    .stream().collect(Collectors.toMap(Object::toString, e->1d));
-            Map<String,Double> lineage = lineageGraph.getAncestorsOf(strain)
-                                .stream().collect(Collectors.toMap(Functions.identity(),e->1d));
-            Map<String,Double> type = typeData.getOrDefault(strain, Collections.emptyList())
-                    .stream().collect(Collectors.toMap(Object::toString, e->1d));
-            double eScore = effectSim.similarity(effects, knownEffects) * weights[0];
-            double fScore = flavorSim.similarity(flavors, knownFlavors) * weights[1];
-            double lScore = parentSim.similarity(lineage, knownLineage) * weights[2];
-            double rScore = rScores.getOrDefault(strain, 0d) * weights[3];
-            double tScore = typeSim.similarity(type, knownTypes) * weights[4];
-            Recommendation recommendation = new Recommendation(strain);
-            recommendation.setEffectSimilarity(eScore);
-            recommendation.setLineageSimilarity(lScore);
-            recommendation.setFlavorSimilarity(fScore);
-            recommendation.setTypeSimilarity(tScore);
-            recommendation.setReviewSimilarity(rScore);
-            double score;
-            if(logit==null) {
-                score = eScore + fScore + lScore + rScore + tScore;
-            } else {
-                double[] post = new double[2];
-                logit.predict(new double[]{
-                        recommendation.getEffectSimilarity(),
-                        recommendation.getFlavorSimilarity(),
-                        recommendation.getLineageSimilarity(),
-                        recommendation.getReviewSimilarity(),
-                        recommendation.getTypeSimilarity()
-                }, post);
-                score = post[1];
-            }
-            recommendation.setOverallSimilarity(score);
-            return recommendation;
-
+        final Map<String,Integer> rcScores = reviewsModel.getReviewSizeMap();
+        Stream<Recommendation> stream = strains.stream().filter(strain->!previousStrains.contains(strain)).map(_strain->{
+            return recommendationScoreFor(_strain, logit,
+                    knownEffects, knownFlavors, knownLineage, knownTypes, rScores, rcScores);
         });
         if(n > 0) {
             return stream.sorted((e1, e2) -> Double.compare(e2.getOverallSimilarity(), e1.getOverallSimilarity())).limit(n).collect(Collectors.toList());

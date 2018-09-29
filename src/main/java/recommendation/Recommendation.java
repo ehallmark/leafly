@@ -21,6 +21,8 @@ public class Recommendation {
     @Getter @Setter
     private double lineageSimilarity;
     @Getter @Setter
+    private double numReviews;
+    @Getter @Setter
     private String strain;
     public Recommendation(@NonNull String strain) {
         this.strain=strain;
@@ -33,6 +35,7 @@ public class Recommendation {
                 "\n\t\tFlavor Similarity: "+flavorSimilarity +
                 "\n\t\tReview Similarity: "+reviewSimilarity +
                 "\n\t\tType Similarity: "+typeSimilarity +
-                "\n\t\tLineage Similarity: "+lineageSimilarity;
+                "\n\t\tLineage Similarity: "+lineageSimilarity +
+                "\n\t\tNum Reviews: "+numReviews;
     }
 }

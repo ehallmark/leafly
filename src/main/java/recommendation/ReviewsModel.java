@@ -12,6 +12,8 @@ public class ReviewsModel {
     @Getter
     private Map<String, List<Pair<String,Integer>>> profileToReviewMap = new HashMap<>();
     private SimilarityEngine strainSim;
+    @Getter
+    private Map<String,Integer> reviewSizeMap;
     public ReviewsModel(List<Map<String,Object>> data) {
         for(Map<String,Object> row : data) {
             String strain = (String) row.get("strain_id");
@@ -27,6 +29,7 @@ public class ReviewsModel {
 
 
     public Map<String,Double> similarity(Map<String,Double> knownStrainsNormalizedWeighted) {
+        reviewSizeMap = null;
         Map<String,Double> similarityMap = new HashMap<>();
 
         // get reviewers of known strains
@@ -64,18 +67,20 @@ public class ReviewsModel {
                     }
                     return  tmp;
                 }));
-
+        reviewSizeMap = new HashMap<>();
         // rank scores
         for(String strain : otherStrains) {
             double sim = profileSimilarityMap.entrySet().stream().mapToDouble(e->{
                 double authorSim = e.getValue();
                 String author = e.getKey();
-                int s = relevantReviewMap.getOrDefault(author, Collections.emptyMap())
-                        .getOrDefault(strain, Collections.emptyList()).stream()
+                List<Integer> reviewScores = relevantReviewMap.getOrDefault(author, Collections.emptyMap())
+                        .getOrDefault(strain, Collections.emptyList());
+                int s = reviewScores.stream()
                         .mapToInt(p->p)
                         .sum();
+                reviewSizeMap.put(strain, reviewScores.size());
                 return authorSim * s;
-            }).sum();
+            }).average().orElse(0d);
             similarityMap.put(strain, sim);
         }
         return similarityMap;
