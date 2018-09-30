@@ -35,9 +35,9 @@ public class Recommender {
         // initialize categorical data similarity engines
         List<String> effects = Database.loadEffects().stream().distinct().sorted().collect(Collectors.toList());
         List<String> flavors = Database.loadFlavors().stream().distinct().sorted().collect(Collectors.toList());
-        effectSim = new SimilarityEngine(effects, Database.loadSimilarityMatrix("strain_effects", "strain_id", "effect", effects));
+        effectSim = new SimilarityEngine(effects, null);//Database.loadSimilarityMatrix("strain_effects", "strain_id", "effect", effects));
         typeSim = new SimilarityEngine(Arrays.asList("Hybrid", "Indica", "Sativa"), SimilarityEngine.TYPE_SIMILARITY_MATRIX);
-        flavorSim = new SimilarityEngine(flavors, Database.loadSimilarityMatrix("strain_flavors", "strain_id", "flavor", flavors));
+        flavorSim = new SimilarityEngine(flavors,  null);//Database.loadSimilarityMatrix("strain_flavors", "strain_id", "flavor", flavors));
         strains = Database.loadStrains();
         parentSim = new SimilarityEngine(strains);
 

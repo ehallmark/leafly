@@ -85,9 +85,9 @@ public class SimilarityEngine {
         for(int i = 0; i < n; i++) {
             for(int j = 0; j < n; j++ ) {
                 double sij = s[i][j];
-                ab += v1[i] * v2[j] * sij;
-                a += v1[i] * v1[j] * sij;
-                b += v2[i] * v2[j] * sij;
+                ab += (v1[i] * v2[j] * sij);
+                a += (v1[i] * v1[j] * sij);
+                b += (v2[i] * v2[j] * sij);
             }
         }
         if(a>0 && b > 0) {

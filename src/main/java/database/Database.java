@@ -58,19 +58,19 @@ public class Database {
         data.forEach((id, list)->{
             for(int i = 0; i < list.size(); i++) {
                 Object xi = list.get(i);
-                for(int j = i+1; j < list.size(); j++) {
+                for(int j = 0; j < list.size(); j++) {
                     Object xj = list.get(j);
                     int idx1 = labelIdxMap.get((String)xi);
                     int idx2 = labelIdxMap.get((String)xj);
                     matrix[idx1][idx2] ++;
-                    matrix[idx2][idx1] ++;
+                    //matrix[idx2][idx1] ++;
                     counts[idx1] ++;
-                    counts[idx2] ++;
+                    //counts[idx2] ++;
                 }
             }
         });
         for(int i = 0; i < labels.size(); i++) {
-            for(int j = i+1; j < labels.size(); j++) {
+            for(int j = 0; j < labels.size(); j++) {
                 matrix[i][j] /= Math.max(1d, counts[i] + counts[j]);
             }
         }
