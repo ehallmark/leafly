@@ -29,7 +29,11 @@ public class Main {
         List<Map<String,Object>> strainData = Database.loadData("strains", "id", "name", "type");
         Map<String,String> nameMap = Database.loadMap("strains", "id", "name").entrySet()
                 .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue().get(0).toString()));
+        Map<String,List<String>> linkMap = Database.loadMap("strain_photos", "strain_id", "photo_url").entrySet()
+                .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue().stream().map(o->o.toString()).limit(5).collect(Collectors.toList())));
+
         Recommender recommender = new Recommender();
+
         SoftClassifier<double[]> logit = TrainRecommender.loadClassificationModel();
 
         get("/", (req, res)->{
@@ -75,7 +79,10 @@ public class Main {
 
                 html = div().withClass("col-12").with(
                         topRecommendations.stream().map(recommendation -> {
-                            return div().with(b(nameMap.get(recommendation.getStrain()))).with(
+                            List<String> links = linkMap.getOrDefault(recommendation.getStrain(), Collections.emptyList());
+                            return div().with(b(nameMap.get(recommendation.getStrain())))
+                                    .with(links.stream().map(link->img().withSrc(link)).collect(Collectors.toList()))
+                                    .with(
                                     div().with(Stream.of(recommendation.toString().split("\\n")).map(line->{
                                         return div(line);
                                     }).collect(Collectors.toList()))
