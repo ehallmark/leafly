@@ -83,3 +83,5 @@ insert into parent_strains ( select distinct parent_strain_id from strain_lineag
 \copy strain_effects to /home/ehallmark/Downloads/strain_effects.csv delimiter ',' csv header;
 \copy strain_lineage to /home/ehallmark/Downloads/strain_lineage.csv delimiter ',' csv header;
 
+pg_dump -Fc --dbname=postgresql://postgres:password@127.0.0.1:5432/leaflydb > leaflydb.dump
+pg_restore -Fc --dbname=postgresql://postgres:password@127.0.0.1:5432/leaflydb > leaflydb.dump
