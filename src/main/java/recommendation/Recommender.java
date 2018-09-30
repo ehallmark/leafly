@@ -25,6 +25,7 @@ public class Recommender {
     private Map<String,List<Object>> flavorData;
     private Map<String,List<Object>> typeData;
     private Map<String,Map<String,Double>> effectData;
+    private StringSimilarity stringSimilarity;
     private LineageGraph lineageGraph;
     private ReviewsModel reviewsModel;
     private List<String> strains;
@@ -48,6 +49,7 @@ public class Recommender {
         effectData = Database.loadMapWithValue("strain_effects", "strain_id", "effect", "effect_percent");
         typeData = Database.loadMap("strains", "id", "type");
         reviewsModel = new ReviewsModel(reviewData);
+        stringSimilarity = new StringSimilarity();
 
         System.out.println("Flavor data size: "+flavorData.size());
         System.out.println("Effect data size: "+effectData.size());
@@ -86,11 +88,11 @@ public class Recommender {
                 .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue()-2.5));
         final Map<String,Double> rScores = reviewsModel.similarity(normalizedRatings);
         Map<String,Integer> rcScores = reviewsModel.getReviewSizeMap();
-        return recommendationScoreFor(_strain, logit,
+        return recommendationScoreFor(_strain, logit, previousStrainRatings,
                 knownEffects, knownFlavors, knownLineage, knownTypes, rScores, rcScores);
     }
 
-    public Recommendation recommendationScoreFor(@NonNull String _strain, SoftClassifier<double[]> logit,
+    public Recommendation recommendationScoreFor(@NonNull String _strain, SoftClassifier<double[]> logit, Map<String,Double> previousStrainRatings,
                                                  Map<String,Double> knownEffects, Map<String,Double> knownFlavors, Map<String,Double> knownLineage,
                                                  Map<String,Double> knownTypes, Map<String,Double> rScores, Map<String,Integer> rcScores) {
 
@@ -107,6 +109,10 @@ public class Recommender {
         double lScore = parentSim.similarity(lineage, knownLineage);
         double rScore = rScores.getOrDefault(_strain, 0d);
         double rcScore = rcScores.getOrDefault(_strain, 0);
+        double nScore = previousStrainRatings.keySet().stream()
+                .mapToDouble(strain->
+                        stringSimilarity.similarity(_strain.split("_")[2], strain.split("_")[2]))
+                .average().orElse(0d);
         double tScore = typeSim.similarity(type, knownTypes);
         Recommendation recommendation = new Recommendation(_strain);
         recommendation.setEffectSimilarity(eScore);
@@ -114,10 +120,11 @@ public class Recommender {
         recommendation.setFlavorSimilarity(fScore);
         recommendation.setTypeSimilarity(tScore);
         recommendation.setReviewSimilarity(rScore);
+        recommendation.setNameSimilarity(nScore);
         recommendation.setNumReviews(rcScore);
         double score;
         if(logit==null) {
-            score = eScore + fScore + lScore + rScore + tScore;
+            score = eScore + fScore + lScore + rScore + tScore + nScore;
         } else {
             double[] post = new double[2];
             logit.predict(new double[]{
@@ -126,17 +133,18 @@ public class Recommender {
                     recommendation.getLineageSimilarity(),
                     recommendation.getReviewSimilarity(),
                     recommendation.getTypeSimilarity(),
+                    recommendation.getNameSimilarity(),
                     recommendation.getNumReviews()
             }, post);
-            score = DoubleStream.of(post[1], 0.2 * eScore,  0.2 * fScore,  0.2 * lScore,  0.2 * rScore,  0.2 * tScore).sum();
+            score = DoubleStream.of(post[1], 0.1 * eScore,  0.1 * fScore,  0.1 * lScore,  0.1 * rScore,  0.1 * tScore, 0.1*nScore).sum();
         }
         recommendation.setOverallSimilarity(score);
         return recommendation;
     }
 
-    public List<Recommendation> topRecommendations(int n, @NonNull Map<String,Double> previousStrainRatings, SoftClassifier<double[]> logit) {
-        Set<String> previousStrains = new HashSet<>(previousStrainRatings.keySet());
-        previousStrainRatings = previousStrainRatings.entrySet().stream()
+    public List<Recommendation> topRecommendations(int n, @NonNull Map<String,Double> _previousStrainRatings, SoftClassifier<double[]> logit) {
+        Set<String> previousStrains = new HashSet<>(_previousStrainRatings.keySet());
+        Map<String,Double> previousStrainRatings = _previousStrainRatings.entrySet().stream()
                 .filter(e->e.getValue()>=3.5)
                 .collect(Collectors.toMap(e->e.getKey(), e->e.getValue()));
 
@@ -176,7 +184,7 @@ public class Recommender {
         final Map<String,Double> rScores = reviewsModel.similarity(normalizedRatings);
         final Map<String,Integer> rcScores = reviewsModel.getReviewSizeMap();
         Stream<Recommendation> stream = strains.stream().filter(strain->!previousStrains.contains(strain)).map(_strain->{
-            return recommendationScoreFor(_strain, logit,
+            return recommendationScoreFor(_strain, logit, previousStrainRatings,
                     knownEffects, knownFlavors, knownLineage, knownTypes, rScores, rcScores);
         });
         if(n > 0) {

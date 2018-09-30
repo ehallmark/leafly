@@ -58,6 +58,7 @@ public class TrainRecommender {
                     recommendation.getLineageSimilarity(),
                     recommendation.getReviewSimilarity(),
                     recommendation.getTypeSimilarity(),
+                    recommendation.getNameSimilarity(),
                     recommendation.getNumReviews()
             };
         }

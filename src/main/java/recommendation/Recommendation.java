@@ -19,6 +19,8 @@ public class Recommendation {
     @Getter @Setter
     private double typeSimilarity;
     @Getter @Setter
+    private double nameSimilarity;
+    @Getter @Setter
     private double lineageSimilarity;
     @Getter @Setter
     private double numReviews;
@@ -36,6 +38,7 @@ public class Recommendation {
                 "\n\t\tReview Similarity: "+formatDouble(reviewSimilarity) +
                 "\n\t\tType Similarity: "+formatDouble(typeSimilarity) +
                 "\n\t\tLineage Similarity: "+formatDouble(lineageSimilarity) +
+                "\n\t\tName Similarity: "+formatDouble(nameSimilarity) +
                 "\n\t\tNum Reviews: "+numReviews;
     }
 
