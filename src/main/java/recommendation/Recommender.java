@@ -13,6 +13,7 @@ import java.io.BufferedInputStream;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 public class Recommender {
@@ -126,7 +127,7 @@ public class Recommender {
                     recommendation.getTypeSimilarity(),
                     recommendation.getNumReviews()
             }, post);
-            score = post[1];
+            score = DoubleStream.of(post[1], 0.2 * eScore,  0.2 * fScore,  0.2 * lScore,  0.2 * rScore,  0.2 * tScore).sum();
         }
         recommendation.setOverallSimilarity(score);
         return recommendation;
