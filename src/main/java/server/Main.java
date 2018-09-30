@@ -7,6 +7,7 @@ import recommendation.Recommendation;
 import recommendation.Recommender;
 import recommendation.TrainRecommender;
 import smile.classification.LogisticRegression;
+import smile.classification.SoftClassifier;
 
 import java.io.File;
 import java.util.Collections;
@@ -29,7 +30,7 @@ public class Main {
         Map<String,String> nameMap = Database.loadMap("strains", "id", "name").entrySet()
                 .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue().get(0).toString()));
         Recommender recommender = new Recommender();
-        LogisticRegression logit = TrainRecommender.loadLogitModel();
+        SoftClassifier<double[]> logit = TrainRecommender.loadClassificationModel();
 
         get("/", (req, res)->{
             req.session(true);

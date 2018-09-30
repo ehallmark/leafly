@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import smile.classification.LogisticRegression;
+import smile.classification.SoftClassifier;
 
 import java.io.BufferedInputStream;
 import java.sql.SQLException;
@@ -52,7 +53,7 @@ public class Recommender {
         System.out.println("Effect data size: "+effectData.size());
     }
 
-    public Recommendation recommendationScoreFor(@NonNull String _strain, @NonNull Map<String,Double> previousStrainRatings, LogisticRegression logit) {
+    public Recommendation recommendationScoreFor(@NonNull String _strain, @NonNull Map<String,Double> previousStrainRatings, SoftClassifier<double[]> logit) {
         Map<String,Double> knownFlavors = new HashMap<>();
         Map<String,Double> knownEffects = new HashMap<>();
         Map<String,Double> knownTypes = new HashMap<>();
@@ -89,7 +90,7 @@ public class Recommender {
                 knownEffects, knownFlavors, knownLineage, knownTypes, rScores, rcScores);
     }
 
-    public Recommendation recommendationScoreFor(@NonNull String _strain, LogisticRegression logit,
+    public Recommendation recommendationScoreFor(@NonNull String _strain, SoftClassifier<double[]> logit,
                                                  Map<String,Double> knownEffects, Map<String,Double> knownFlavors, Map<String,Double> knownLineage,
                                                  Map<String,Double> knownTypes, Map<String,Double> rScores, Map<String,Integer> rcScores) {
 
@@ -133,7 +134,7 @@ public class Recommender {
         return recommendation;
     }
 
-    public List<Recommendation> topRecommendations(int n, @NonNull Map<String,Double> previousStrainRatings, LogisticRegression logit) {
+    public List<Recommendation> topRecommendations(int n, @NonNull Map<String,Double> previousStrainRatings, SoftClassifier<double[]> logit) {
         Set<String> previousStrains = new HashSet<>(previousStrainRatings.keySet());
         previousStrainRatings = previousStrainRatings.entrySet().stream()
                 .filter(e->e.getValue()>=3.5)
@@ -187,7 +188,7 @@ public class Recommender {
 
     public static void main(String[] args) throws Exception {
         Random rand = new Random(2352);
-        LogisticRegression logit = TrainRecommender.loadLogitModel();
+        SoftClassifier<double[]> logit = TrainRecommender.loadClassificationModel();
         // should add genetic fingerprint data when applicable
         Recommender recommender = new Recommender();
 

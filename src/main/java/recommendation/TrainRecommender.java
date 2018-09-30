@@ -2,7 +2,9 @@ package recommendation;
 
 import database.Database;
 import javafx.util.Pair;
-import smile.classification.LogisticRegression;
+import smile.classification.*;
+import smile.stat.distribution.BetaDistribution;
+import smile.stat.distribution.Distribution;
 
 import java.io.*;
 import java.util.*;
@@ -60,8 +62,10 @@ public class TrainRecommender {
             };
         }
 
-        LogisticRegression logit = new LogisticRegression(x, y);
-        System.out.println("Log likelihood: "+logit.loglikelihood());
+        SoftClassifier<double[]> logit = new RandomForest(x, y, 300);
+       // SoftClassifier<double[]> logit = new LogisticRegression(x, y);
+
+        //System.out.println("Log likelihood: "+logit.loglikelihood());
         try(ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(new File(LOGIT_FILE))))) {
             oos.writeObject(logit);
             oos.flush();
@@ -88,16 +92,16 @@ public class TrainRecommender {
         test(testProfiles, testReviewData, trainRecommender, logit);
     }
 
-    public static LogisticRegression loadLogitModel() {
+    public static SoftClassifier<double[]> loadClassificationModel() {
         try (ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(new File(LOGIT_FILE))))) {
-            return (LogisticRegression) ois.readObject();
+            return (SoftClassifier<double[]>) ois.readObject();
         } catch(Exception e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    private static double test(List<String> testProfiles, Map<String,List<Pair<String,Integer>>> testReviewData, Recommender trainRecommender, LogisticRegression logit) {
+    private static double test(List<String> testProfiles, Map<String,List<Pair<String,Integer>>> testReviewData, Recommender trainRecommender, SoftClassifier<double[]> logit) {
         int count = 0;
         double score = 0d;
         Random rand = new Random(23521);
