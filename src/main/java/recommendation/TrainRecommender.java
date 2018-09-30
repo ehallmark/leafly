@@ -49,7 +49,7 @@ public class TrainRecommender {
             Pair<String,Integer> best = data.remove(rand.nextInt(data.size()));
             Map<String, Double> ratings = data.stream().collect(Collectors.groupingBy(e -> e.getKey(), Collectors.averagingDouble(e -> e.getValue())));
             Recommendation recommendation = trainRecommender.recommendationScoreFor(best.getKey(), ratings, null);
-            y[i] = best.getValue().doubleValue()>=5 ? 1 : 0;
+            y[i] = best.getValue().doubleValue()>=4 ? 1 : 0;
             x[i] = new double[]{
                     recommendation.getEffectSimilarity(),
                     recommendation.getFlavorSimilarity(),
@@ -108,7 +108,7 @@ public class TrainRecommender {
                 Pair<String,Integer> best = data.remove(rand.nextInt(data.size()));
                 Map<String, Double> ratings = data.stream().collect(Collectors.groupingBy(e -> e.getKey(), Collectors.averagingDouble(e -> e.getValue())));
                 Recommendation recommendation = trainRecommender.recommendationScoreFor(best.getKey(), ratings, logit);
-                double target = best.getValue()>=5 ? 1.0 : 0.0;
+                double target = best.getValue()>=4 ? 1.0 : 0.0;
                 score+=Math.abs(target - recommendation.getOverallSimilarity());
                 count++;
             }

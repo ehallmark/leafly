@@ -30,12 +30,28 @@ public class Recommendation {
 
     @Override
     public String toString() {
-        return "Strain: "+strain+"\n\tSimilarity: "+overallSimilarity +
-                "\n\t\tEffect Similarity: "+effectSimilarity +
-                "\n\t\tFlavor Similarity: "+flavorSimilarity +
-                "\n\t\tReview Similarity: "+reviewSimilarity +
-                "\n\t\tType Similarity: "+typeSimilarity +
-                "\n\t\tLineage Similarity: "+lineageSimilarity +
+        return "Type: "+typeFromId(strain)+"\nID: "+strain+"\n\tSimilarity: "+formatDouble(overallSimilarity) +
+                "\n\t\tEffect Similarity: "+formatDouble(effectSimilarity) +
+                "\n\t\tFlavor Similarity: "+formatDouble(flavorSimilarity) +
+                "\n\t\tReview Similarity: "+formatDouble(reviewSimilarity) +
+                "\n\t\tType Similarity: "+formatDouble(typeSimilarity) +
+                "\n\t\tLineage Similarity: "+formatDouble(lineageSimilarity) +
                 "\n\t\tNum Reviews: "+numReviews;
+    }
+
+    private static String formatDouble(double x) {
+        return String.format("%.2f", x);
+    }
+
+    private static String typeFromId(String id) {
+        if(id.startsWith("_indica")) {
+            return "Indica";
+        } else if (id.startsWith("_sativa")) {
+            return "Sativa";
+        } else if(id.startsWith("_hybrid")) {
+            return "Hybrid";
+        } else {
+            throw new RuntimeException("Invalid strain id");
+        }
     }
 }
