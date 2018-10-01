@@ -80,7 +80,7 @@ public class Main {
                 html = div().withClass("col-12").with(
                         topRecommendations.stream().map(recommendation -> {
                             List<String> links = linkMap.getOrDefault(recommendation.getStrain(), Collections.emptyList());
-                            return div().with(b(nameMap.get(recommendation.getStrain())))
+                            return div().with(b(nameMap.get(recommendation.getStrain()))).with(br())
                                     .with(links.stream().map(link->img().withSrc(link)).collect(Collectors.toList()))
                                     .with(
                                     div().with(Stream.of(recommendation.toString().split("\\n")).map(line->{
