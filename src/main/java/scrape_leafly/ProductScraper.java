@@ -95,8 +95,9 @@ public class ProductScraper {
                             // get product reviews
                             Elements itemLinks = productPage.select(".product-grid a.item[href]");
                             for(Element itemLink : itemLinks) {
-                                String itemHref = itemLink.attr("href")+"/reviews";
-                                while(itemLink!=null) {
+                                {
+                                    // get product page
+                                    String itemHref = itemLink.attr("href");
                                     String itemId = itemHref.replace("/", "_");
                                     String itemUrl = "https://www.leafly.com" + itemHref;
                                     File itemFile = new File(new File(folder, "products"), itemId);
@@ -109,14 +110,31 @@ public class ProductScraper {
                                     if (itemFile.exists()) {
                                         page = FileUtils.readFileToString(itemFile, Charsets.UTF_8);
                                     }
-                                    itemLink = null;
-                                    if (page != null) {
-                                        Document itemPage = Jsoup.parse(page);
-                                        Elements nextItem = itemPage.select(".leafly-pagination a.next.page-numbers[href]");
-                                        if (nextItem.size() > 0) {
-                                            // get next page
-                                            itemLink = nextItem.get(0);
-                                            itemHref = itemLink.attr("href");
+                                }
+                                if(itemLink.select(".rating").size()>0) {
+                                    String itemHref = itemLink.attr("href")+"/reviews";
+                                    while(itemLink!=null) {
+                                        String itemId = itemHref.replace("/", "_");
+                                        String itemUrl = "https://www.leafly.com" + itemHref;
+                                        File itemFile = new File(new File(folder, "products"), itemId);
+                                        if (!itemFile.exists() || reseed) {
+                                            driver.get(itemUrl);
+                                            TimeUnit.MILLISECONDS.sleep(timeSleep);
+                                            page = driver.getPageSource();
+                                            FileUtils.writeStringToFile(itemFile, page, Charsets.UTF_8);
+                                        }
+                                        if (itemFile.exists()) {
+                                            page = FileUtils.readFileToString(itemFile, Charsets.UTF_8);
+                                        }
+                                        itemLink = null;
+                                        if (page != null) {
+                                            Document itemPage = Jsoup.parse(page);
+                                            Elements nextItem = itemPage.select(".leafly-pagination a.next.page-numbers[href]");
+                                            if (nextItem.size() > 0) {
+                                                // get next page
+                                                itemLink = nextItem.get(0);
+                                                itemHref = itemLink.attr("href");
+                                            }
                                         }
                                     }
                                 }
