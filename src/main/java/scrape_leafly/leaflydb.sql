@@ -82,7 +82,8 @@ create table products (
     short_description text,
     description text,
     price double precision,
-    rating double precision
+    rating double precision,
+    strain_id text
 );
 
 drop table product_reviews;
@@ -108,5 +109,5 @@ create table product_reviews (
 
 \encoding UTF8
 
-pg_dump -Fc --dbname=postgresql://postgres:password@127.0.0.1:5432/leaflydb > leaflydb.dump
-pg_restore -Fc --dbname=postgresql://postgres:password@127.0.0.1:5432/leaflydb leaflydb.dump
+pg_dump -Fc --dbname=postgresql://postgres:password@127.0.0.1:5432/leaflydb > ~/repos/leafly/leaflydb.dump
+pg_restore -Fc --dbname=postgresql://postgres:password@127.0.0.1:5432/leaflydb ~/repos/leafly/leaflydb.dump

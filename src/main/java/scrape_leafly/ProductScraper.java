@@ -176,7 +176,12 @@ public class ProductScraper {
         System.out.println("Brand: "+brandName+", Product: "+productName+", Price: "+productPrice+", Rating: "+starRating+"\nDescription: "+shortDescription+"\n"+description+"\n");
         Double productPriceDouble = productPrice.length()>0 ? Double.valueOf(productPrice.replace("$","").replace(",","")) : null;
         Double starRatingDouble = starRating!=null && starRating.length()>0 ? Double.valueOf(starRating) : null;
-        final PreparedStatement ps = conn.prepareStatement("insert into products (product_id,product_name, brand_name, short_description, description, price, rating) values (?,?,?,?,?,?,?) on conflict (product_id) do nothing");
+        final PreparedStatement ps = conn.prepareStatement("insert into products (product_id,product_name, brand_name, short_description, description, price, rating, strain_id) values (?,?,?,?,?,?,?,?) on conflict (product_id) do nothing");
+        Elements productStrain = document.select("article.product-strain");
+        String strainId = null;
+        if(productStrain.size()>0) {
+            strainId = productStrain.select("a.product-strain-tile[href]").attr("href").replace("/","_");
+        }
         ps.setString(1, productId);
         ps.setString(2, productName);
         ps.setString(3, brandName);
@@ -184,6 +189,7 @@ public class ProductScraper {
         ps.setString(5, description);
         ps.setObject(6, productPriceDouble);
         ps.setObject(7, starRatingDouble);
+        ps.setObject(8, strainId);
         ps.executeUpdate();
         ps.close();
         conn.commit();

@@ -155,5 +155,15 @@
             <artifactId>selenium-api</artifactId>
             <version>3.13.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-core</artifactId>
+            <version>1.0.0-beta2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-core</artifactId>
+            <version>1.0.0-beta2</version>
+        </dependency>
     </dependencies>
 </project>

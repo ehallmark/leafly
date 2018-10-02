@@ -9,12 +9,13 @@ import smile.stat.distribution.Distribution;
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class TrainRecommender {
     private static final String LOGIT_FILE = "recommendation.logit";
 
     public static void main(String[] args) throws Exception {
-        final int numTests = 2000;
+        final int numTests = 10000;
         final Random rand = new Random(23521);
         final List<Map<String,Object>> allReviewData = new ArrayList<>(Database.loadData("strain_reviews", "strain_id", "review_rating", "review_profile"));
         Map<String, List<Pair<String,Integer>>> profileData = new ReviewsModel(allReviewData).getProfileToReviewMap();
@@ -36,16 +37,21 @@ public class TrainRecommender {
                 })).collect(Collectors.toList());
 
         // create train dataset
+        System.out.println("Creating dataset...");
         Map<String,List<Pair<String,Integer>>> trainReviewData = new ReviewsModel(trainData).getProfileToReviewMap()
                 .entrySet().stream().filter(e->e.getValue().size()>1)
                 .collect(Collectors.toMap(e->e.getKey(),e->e.getValue()));
 
+        System.out.println("Creating recommender...");
         Recommender trainRecommender = new Recommender(trainData);
 
+        System.out.println("Preprocessing data...");
         int[] y = new int[trainReviewData.size()];
         double[][] x = new double[trainReviewData.size()][];
         List<String> keys = new ArrayList<>(trainReviewData.keySet());
-        for(int i = 0; i < keys.size(); i++) {
+        Collections.shuffle(keys, new Random(235));
+        int numTrain = 1000;
+        IntStream.range(0, numTrain).parallel().forEach(i->{
             String profile = keys.get(i);
             List<Pair<String,Integer>> data = trainReviewData.get(profile);
             Pair<String,Integer> best = data.remove(rand.nextInt(data.size()));
@@ -61,10 +67,12 @@ public class TrainRecommender {
                     recommendation.getNameSimilarity(),
                     recommendation.getNumReviews()
             };
-        }
+            System.out.println(i);
+        });
 
-        SoftClassifier<double[]> logit = new RandomForest(x, y, 300);
-       // SoftClassifier<double[]> logit = new LogisticRegression(x, y);
+        System.out.println("Training model...");
+       // SoftClassifier<double[]> logit = new RandomForest(x, y, 300);
+        SoftClassifier<double[]> logit = new LogisticRegression(x, y);
 
         //System.out.println("Log likelihood: "+logit.loglikelihood());
         try(ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(new File(LOGIT_FILE))))) {
