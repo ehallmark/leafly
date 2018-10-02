@@ -12,11 +12,10 @@ create table strains (
 drop table strain_reviews;
 create table strain_reviews (
     strain_id text not null,
-    review_num integer not null,
     review_text text not null,
     review_rating integer not null,
     review_profile text not null,
-    primary key (strain_id, review_num)
+    primary key (strain_id, review_rating, review_profile)
 );
 
 drop table strain_photos;

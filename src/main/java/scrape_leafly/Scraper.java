@@ -59,12 +59,15 @@ public class Scraper {
         ChromeOptions options = new ChromeOptions();
         System.setProperty("webdriver.chrome.driver", "/usr/bin/chromedriver");
         System.setProperty("webdriver.firefox.driver", "/usr/bin/geckodriver");
-        driver = new ChromeDriver(options);
-
-        driver.get(url);
-        for (int i = 0; i < 10; i++) {
-            System.out.println("Starting in " + (10 - i));
-            TimeUnit.MILLISECONDS.sleep(1000);
+        try {
+            driver = new ChromeDriver(options);
+            driver.get(url);
+            for (int i = 0; i < 10; i++) {
+                System.out.println("Starting in " + (10 - i));
+                TimeUnit.MILLISECONDS.sleep(1000);
+            }
+        } catch(Exception e) {
+           // e.printStackTrace();
         }
 
         if(new File(folder, "data.html").exists() && !reseed) {
@@ -144,7 +147,7 @@ public class Scraper {
                     int cnt = 0;
                     File reviewFile = new File(new File(folder, "reviews"), href.replace("/", "_") + "_" + cnt);
                     WebElement element = null;
-                    if(!reviewFile.exists() || reseed) {
+                    if(driver!=null && (!reviewFile.exists() || reseed)) {
                         // now get reviews
                         driver.get("https://www.leafly.com" + href + "/reviews?sort=date");
                         try {
@@ -155,15 +158,10 @@ public class Scraper {
 
                         FileUtils.writeStringToFile(reviewFile, driver.getPageSource(), Charsets.UTF_8);
                     }
-                    String prevReview = null;
                     String reviewPage = FileUtils.readFileToString(reviewFile, Charsets.UTF_8);
                     int offset = handleReviews(strainId, reviewPage, conn, 0);
-                    boolean seekNext = false;
-                    while (seekNext || prevReview == null || !prevReview.equals(driver.getPageSource())) {
-                        boolean wasSeeking = seekNext;
-                        seekNext = false;
+                    while (true) {
                         cnt++;
-                        prevReview = driver.getPageSource();
                         if (element != null) {
                             try {
                                 element.click();
@@ -171,10 +169,9 @@ public class Scraper {
                                 e.printStackTrace();
                             }
                         }
-                       // System.out.println("Strain " + n + " -> Page: " + cnt);
                         reviewFile = new File(new File(folder, "reviews"), href.replace("/", "_") + "_" + cnt);
                         if (!reviewFile.exists() || reseed) {
-                            if (!wasSeeking) {
+                            if (driver!=null) {
                                 TimeUnit.MILLISECONDS.sleep(timeSleep);
                                 FileUtils.writeStringToFile(reviewFile, driver.getPageSource(), Charsets.UTF_8);
                                 try {
@@ -183,12 +180,12 @@ public class Scraper {
                                     e.printStackTrace();
                                 }
                             }
-                        } else {
-                            seekNext = true;
                         }
                         if (reviewFile.exists()) {
                             reviewPage = FileUtils.readFileToString(reviewFile, Charsets.UTF_8);
                             offset += handleReviews(strainId, reviewPage, conn, offset);
+                        } else {
+                            break;
                         }
                     }
                 }
@@ -197,7 +194,9 @@ public class Scraper {
         }
         conn.commit();
         conn.close();
-        driver.close();
+        if(driver!=null) {
+            driver.close();
+        }
     }
 
     private static void handleOverviews(String strainId, String reviewPage, Connection conn) throws Exception {
@@ -319,7 +318,7 @@ public class Scraper {
         if(!(strainId.startsWith("_indica") || strainId.startsWith("_sativa")||strainId.startsWith("_hybrid"))) {
             return 0;
         }
-        PreparedStatement ps = conn.prepareStatement("insert into strain_reviews (strain_id,review_num,review_text,review_rating,review_profile) values (?,?,?,?,?) on conflict do nothing");
+        PreparedStatement ps = conn.prepareStatement("insert into strain_reviews (strain_id,review_text,review_rating,review_profile) values (?,?,?,?) on conflict do nothing");
         // author, rating, review text
         Document document = Jsoup.parse(reviewPage);
         Elements reviews = document.select(".strain-reviews__review-container li.page-item div.m-review");
@@ -337,10 +336,9 @@ public class Scraper {
            // System.out.println("Rating: "+rating);
            // System.out.println("Text: "+text);
             ps.setString(1, strainId);
-            ps.setInt(2, i);
-            ps.setString(3, text);
-            ps.setObject(4, rating);
-            ps.setString(5, profile);
+            ps.setString(2, text);
+            ps.setObject(3, rating);
+            ps.setString(4, profile);
             ps.executeUpdate();
             i++;
         }
