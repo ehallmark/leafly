@@ -103,6 +103,7 @@ public class ProductScraper {
                             Elements itemLinks = productPage.select(".product-grid a.item[href]");
                             for(Element itemLink : itemLinks) {
                                 String productId;
+                                int offset = 0;
                                 {
                                     // get product page
                                     String itemHref = itemLink.attr("href");
@@ -138,7 +139,7 @@ public class ProductScraper {
                                         }
                                         itemLink = null;
                                         if (page != null) {
-                                            handleRatingsPage(page, productId, conn);
+                                            offset += handleRatingsPage(page, productId, conn, offset);
                                             Document itemPage = Jsoup.parse(page);
                                             Elements nextItem = itemPage.select(".leafly-pagination a.next.page-numbers[href]");
                                             if (nextItem.size() > 0) {
@@ -170,7 +171,7 @@ public class ProductScraper {
         String productPrice = document.select(".product-price").text().trim();
         String starRating = document.select(".product-rating .star-rating span[star-rating]").attr("star-rating");
         System.out.println("Brand: "+brandName+", Product: "+productName+", Price: "+productPrice+", Rating: "+starRating+"\nDescription: "+shortDescription+"\n"+description+"\n");
-        Double productPriceDouble = productPrice!=null && productPrice.length()>0 ? Double.valueOf(productPrice.replace("$","")) : null;
+        Double productPriceDouble = productPrice.length()>0 ? Double.valueOf(productPrice.replace("$","").replace(",","")) : null;
         Double starRatingDouble = starRating!=null && starRating.length()>0 ? Double.valueOf(starRating) : null;
         final PreparedStatement ps = conn.prepareStatement("insert into products (product_id,product_name, brand_name, short_description, description, price, rating) values (?,?,?,?,?,?,?) on conflict (product_id) do nothing");
         ps.setString(1, productId);
@@ -179,17 +180,18 @@ public class ProductScraper {
         ps.setString(4, shortDescription);
         ps.setString(5, description);
         ps.setObject(6, productPriceDouble);
-        ps.setObject(6, starRatingDouble);
+        ps.setObject(7, starRatingDouble);
         ps.executeUpdate();
         ps.close();
         conn.commit();
     }
 
 
-    private static void handleRatingsPage(@NonNull String page, String productId,  Connection conn) throws SQLException {
-        final PreparedStatement ps = conn.prepareStatement("insert into product_reviews (product_id,author,rating,upvotes,downvotes,text) values (?,?,?,?,?,?) on conflict (product_id) do nothing");
+    private static int handleRatingsPage(@NonNull String page, String productId,  Connection conn, int offset) throws SQLException {
+        final PreparedStatement ps = conn.prepareStatement("insert into product_reviews (product_id,author,rating,upvotes,downvotes,text,review_num) values (?,?,?,?,?,?,?) on conflict (product_id,review_num) do nothing");
         Document document = Jsoup.parse(page);
         Elements reviews = document.select("div.product-review");
+        int reviewNum = offset;
         for(Element review : reviews) {
             String author = review.select("div.author").text().trim();
             String rating = review.select(".review-rating span[star-rating]").attr("star-rating");
@@ -213,10 +215,13 @@ public class ProductScraper {
             ps.setObject(4, upvotesDouble);
             ps.setObject(5, downvotesDouble);
             ps.setString(6, text);
+            ps.setInt(7, reviewNum);
             ps.executeUpdate();
+            reviewNum++;
         }
         ps.close();
         conn.commit();
+        return reviews.size();
     }
 
     public static void main(String[] args) throws Exception {

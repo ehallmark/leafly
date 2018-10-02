@@ -75,7 +75,7 @@ create table parent_strains (
 );
 insert into parent_strains ( select distinct parent_strain_id from strain_lineage );
 
-
+drop table products;
 create table products (
     product_id text primary key,
     product_name text not null,
@@ -86,13 +86,16 @@ create table products (
     rating double precision
 );
 
-
+drop table product_reviews;
 create table product_reviews (
-    product_id text primary key,
+    product_id text not null,
+    review_num integer not null,
     author text not null,
     rating integer not null,
     upvotes integer not null,
-    downvotes integer not null
+    downvotes integer not null,
+    text text not null,
+    primary key(product_id, review_num)
 );
 
 

@@ -157,7 +157,7 @@ public class Scraper {
                     }
                     String prevReview = null;
                     String reviewPage = FileUtils.readFileToString(reviewFile, Charsets.UTF_8);
-                    handleReviews(strainId, reviewPage, conn);
+                    int offset = handleReviews(strainId, reviewPage, conn, 0);
                     boolean seekNext = false;
                     while (seekNext || prevReview == null || !prevReview.equals(driver.getPageSource())) {
                         boolean wasSeeking = seekNext;
@@ -188,7 +188,7 @@ public class Scraper {
                         }
                         if (reviewFile.exists()) {
                             reviewPage = FileUtils.readFileToString(reviewFile, Charsets.UTF_8);
-                            handleReviews(strainId, reviewPage, conn);
+                            offset += handleReviews(strainId, reviewPage, conn, offset);
                         }
                     }
                 }
@@ -315,15 +315,15 @@ public class Scraper {
         //System.out.println("Lineage: "+String.join("; ", lineage));
     }
 
-    private static void handleReviews(String strainId, String reviewPage, Connection conn) throws Exception{
+    private static int handleReviews(String strainId, String reviewPage, Connection conn, int offset) throws Exception{
         if(!(strainId.startsWith("_indica") || strainId.startsWith("_sativa")||strainId.startsWith("_hybrid"))) {
-            return;
+            return 0;
         }
         PreparedStatement ps = conn.prepareStatement("insert into strain_reviews (strain_id,review_num,review_text,review_rating,review_profile) values (?,?,?,?,?) on conflict do nothing");
         // author, rating, review text
         Document document = Jsoup.parse(reviewPage);
         Elements reviews = document.select(".strain-reviews__review-container li.page-item div.m-review");
-        int i = 1;
+        int i = offset;
         for(Element review : reviews) {
        //     System.out.println("Found review for "+strainId+": "+review.html());
             String profile = review.select("a[href]").attr("href").replace("/profile/","").trim();
@@ -345,6 +345,7 @@ public class Scraper {
             i++;
         }
         ps.close();
+        return reviews.size();
     }
 
     private static void handlePhotos(String strainId, String photoPage, Connection conn) throws Exception{
