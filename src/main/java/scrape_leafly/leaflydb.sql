@@ -76,6 +76,27 @@ create table parent_strains (
 insert into parent_strains ( select distinct parent_strain_id from strain_lineage );
 
 
+create table products (
+    product_id text primary key,
+    product_name text not null,
+    brand_name text not null,
+    short_description text,
+    description text,
+    price double precision,
+    rating double precision
+);
+
+
+create table product_reviews (
+    product_id text primary key,
+    author text not null,
+    rating integer not null,
+    upvotes integer not null,
+    downvotes integer not null
+);
+
+
+
 \copy strains to /home/ehallmark/Downloads/strains.csv delimiter ',' csv header;
 \copy strain_reviews to /home/ehallmark/Downloads/strain_reviews.csv delimiter ',' csv header;
 \copy strain_photos to /home/ehallmark/Downloads/strain_photos.csv delimiter ',' csv header;

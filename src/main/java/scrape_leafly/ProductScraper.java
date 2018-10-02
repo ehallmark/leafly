@@ -1,6 +1,8 @@
 package scrape_leafly;
 
 import com.google.common.base.Charsets;
+import database.Database;
+import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -11,6 +13,10 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -19,8 +25,9 @@ import java.util.stream.Stream;
 public class ProductScraper {
 
     public static void run(boolean reseed) throws Exception {
-//        final Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost/leaflydb?user=postgres&password=password&tcpKeepAlive=true");
-//        conn.setAutoCommit(false);
+        final Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost/leaflydb?user=postgres&password=password&tcpKeepAlive=true");
+        conn.setAutoCommit(false);
+
         long timeSleep = 100;
         File folder = new File("leafly/");
 
@@ -95,6 +102,7 @@ public class ProductScraper {
                             // get product reviews
                             Elements itemLinks = productPage.select(".product-grid a.item[href]");
                             for(Element itemLink : itemLinks) {
+                                String productId;
                                 {
                                     // get product page
                                     String itemHref = itemLink.attr("href");
@@ -110,6 +118,8 @@ public class ProductScraper {
                                     if (itemFile.exists()) {
                                         page = FileUtils.readFileToString(itemFile, Charsets.UTF_8);
                                     }
+                                    productId = itemId;
+                                    handleProductPage(page, productId, conn);
                                 }
                                 if(itemLink.select(".rating").size()>0) {
                                     String itemHref = itemLink.attr("href")+"/reviews";
@@ -128,6 +138,7 @@ public class ProductScraper {
                                         }
                                         itemLink = null;
                                         if (page != null) {
+                                            handleRatingsPage(page, productId, conn);
                                             Document itemPage = Jsoup.parse(page);
                                             Elements nextItem = itemPage.select(".leafly-pagination a.next.page-numbers[href]");
                                             if (nextItem.size() > 0) {
@@ -146,7 +157,66 @@ public class ProductScraper {
 
 
         }
+        conn.commit();
+        conn.close();
+    }
 
+    private static void handleProductPage(@NonNull String page, String productId, Connection conn) throws SQLException {
+        Document document = Jsoup.parse(page);
+        String brandName = document.select(".product-title .brand-name").text().trim();
+        String productName = document.select(".product-title .product-name").text().trim();
+        String shortDescription = document.select(".product-short-description").text().trim();
+        String description = document.select(".product-description").text().trim();
+        String productPrice = document.select(".product-price").text().trim();
+        String starRating = document.select(".product-rating .star-rating span[star-rating]").attr("star-rating");
+        System.out.println("Brand: "+brandName+", Product: "+productName+", Price: "+productPrice+", Rating: "+starRating+"\nDescription: "+shortDescription+"\n"+description+"\n");
+        Double productPriceDouble = productPrice!=null && productPrice.length()>0 ? Double.valueOf(productPrice.replace("$","")) : null;
+        Double starRatingDouble = starRating!=null && starRating.length()>0 ? Double.valueOf(starRating) : null;
+        final PreparedStatement ps = conn.prepareStatement("insert into products (product_id,product_name, brand_name, short_description, description, price, rating) values (?,?,?,?,?,?,?) on conflict (product_id) do nothing");
+        ps.setString(1, productId);
+        ps.setString(2, productName);
+        ps.setString(3, brandName);
+        ps.setString(4, shortDescription);
+        ps.setString(5, description);
+        ps.setObject(6, productPriceDouble);
+        ps.setObject(6, starRatingDouble);
+        ps.executeUpdate();
+        ps.close();
+        conn.commit();
+    }
+
+
+    private static void handleRatingsPage(@NonNull String page, String productId,  Connection conn) throws SQLException {
+        final PreparedStatement ps = conn.prepareStatement("insert into product_reviews (product_id,author,rating,upvotes,downvotes,text) values (?,?,?,?,?,?) on conflict (product_id) do nothing");
+        Document document = Jsoup.parse(page);
+        Elements reviews = document.select("div.product-review");
+        for(Element review : reviews) {
+            String author = review.select("div.author").text().trim();
+            String rating = review.select(".review-rating span[star-rating]").attr("star-rating");
+            Double ratingDouble = rating!=null && rating.length()>0 ? Double.valueOf(rating) : null;
+            String text = review.select(".text").text().trim();
+            Elements reviewButtons = review.select("button.review-button");
+            String upvotes = null;
+            String downvotes = null;
+            Double upvotesDouble = null;
+            Double downvotesDouble = null;
+            if(reviewButtons.size()==2) {
+                upvotes = reviewButtons.get(0).select(".vote-count").text();
+                downvotes = reviewButtons.get(1).select(".vote-count").text();
+                upvotesDouble = upvotes!=null && upvotes.length()>0 ? Double.valueOf(upvotes) : null;
+                downvotesDouble = downvotes!=null && downvotes.length()>0 ? Double.valueOf(downvotes) : null;
+            }
+            System.out.println("Author: "+author+", Rating: "+rating+", upvotes: "+upvotes+", downvotes: "+downvotes+"\n"+text+"\n");
+            ps.setString(1, productId);
+            ps.setString(2, author);
+            ps.setObject(3, ratingDouble);
+            ps.setObject(4, upvotesDouble);
+            ps.setObject(5, downvotesDouble);
+            ps.setString(6, text);
+            ps.executeUpdate();
+        }
+        ps.close();
+        conn.commit();
     }
 
     public static void main(String[] args) throws Exception {

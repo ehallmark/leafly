@@ -20,7 +20,7 @@ public class DispensaryScraper {
     public static void run(boolean reseed) throws Exception {
 //        final Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost/leaflydb?user=postgres&password=password&tcpKeepAlive=true");
 //        conn.setAutoCommit(false);
-        long timeSleep = 1000;
+        long timeSleep = 100;
         File folder = new File("leafly/");
 
         List<String> cityIds = Stream.of(FileUtils.readFileToString(new File("cities.psv"), Charsets.UTF_8).split("\\n+"))
