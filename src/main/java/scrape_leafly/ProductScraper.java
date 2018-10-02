@@ -31,17 +31,20 @@ public class ProductScraper {
         long timeSleep = 100;
         File folder = new File("leafly/");
 
-        WebDriver driver;
+        WebDriver driver = null;
         String url = "https://www.leafly.com/products";
         ChromeOptions options = new ChromeOptions();
-        System.setProperty("webdriver.chrome.driver", "/usr/bin/chromedriver");
+        System.setProperty("webdriver.chrome.driver", "C:/Users/inamo/Downloads/chromedriver_win32/chromedriver.exe");
         System.setProperty("webdriver.firefox.driver", "/usr/bin/geckodriver");
-        driver = new ChromeDriver(options);
-
-        driver.get(url);
-        for (int i = 0; i < 10; i++) {
-            System.out.println("Starting in " + (10 - i));
-            TimeUnit.MILLISECONDS.sleep(1000);
+        try {
+            driver = new ChromeDriver(options);
+            driver.get(url);
+            for (int i = 0; i < 10; i++) {
+                System.out.println("Starting in " + (10 - i));
+                TimeUnit.MILLISECONDS.sleep(1000);
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
         }
         Document jsoup = Jsoup.parse(driver.getPageSource());
         List<String> links = jsoup.select("div.left-navigation-item a[href]").stream().skip(1)
@@ -80,7 +83,7 @@ public class ProductScraper {
                         String seeAllHref = seeAll.attr("href");
                         String seeAllId = seeAllHref.replace("/", "_");
                         String seeAllUrl = "https://www.leafly.com" + seeAllHref;
-                        File seeAllFile = new File(new File(folder, "products"), seeAllId);
+                        File seeAllFile = new File(new File(folder, "products"), seeAllId.replace("?",""));
                         if(!seeAllFile.exists()||reseed) {
                             driver.get(seeAllUrl);
                             TimeUnit.MILLISECONDS.sleep(timeSleep);
@@ -109,7 +112,7 @@ public class ProductScraper {
                                     String itemHref = itemLink.attr("href");
                                     String itemId = itemHref.replace("/", "_");
                                     String itemUrl = "https://www.leafly.com" + itemHref;
-                                    File itemFile = new File(new File(folder, "products"), itemId);
+                                    File itemFile = new File(new File(folder, "products"), itemId.replace("?",""));
                                     if (!itemFile.exists() || reseed) {
                                         driver.get(itemUrl);
                                         TimeUnit.MILLISECONDS.sleep(timeSleep);
@@ -125,7 +128,7 @@ public class ProductScraper {
                                 if(itemLink.select(".rating").size()>0) {
                                     String itemHref = itemLink.attr("href")+"/reviews";
                                     while(itemLink!=null) {
-                                        String itemId = itemHref.replace("/", "_");
+                                        String itemId = itemHref.replace("/", "_").replace("?","");
                                         String itemUrl = "https://www.leafly.com" + itemHref;
                                         File itemFile = new File(new File(folder, "products"), itemId);
                                         if (!itemFile.exists() || reseed) {
