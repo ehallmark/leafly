@@ -1,57 +1,98 @@
 package recommendation;
 
+import database.Database;
+import javafx.util.Pair;
+import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.RmsProp;
+import smile.projection.PCA;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
 public class UserProductAutoencoder {
 
     public static void main(String[] args) throws Exception {
-        //Neural net configuration
-        Nd4j.getRandom().setSeed(rngSeed);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(rngSeed)
-                .updater(new RmsProp(1e-2))
-                .weightInit(WeightInit.XAVIER)
-                .l2(1e-4)
-                .list()
-                .layer(0, new VariationalAutoencoder.Builder()
-                        .activation(Activation.LEAKYRELU)
-                        .encoderLayerSizes(256, 256)        //2 encoder layers, each of size 256
-                        .decoderLayerSizes(256, 256)        //2 decoder layers, each of size 256
-                        .pzxActivationFunction(Activation.IDENTITY)  //p(z|data) activation function
-                        .reconstructionDistribution(new BernoulliReconstructionDistribution(Activation.SIGMOID.getActivationFunction()))     //Bernoulli distribution for p(data|z) (binary or 0 to 1 data only)
-                        .nIn(28 * 28)                       //Input size: 28x28
-                        .nOut(2)                            //Size of the latent variable space: p(z|x). 2 dimensions here for plotting, use more in general
-                        .build())
-                .pretrain(true).backprop(false).build();
+        final int numTests = 10000;
+        final Random rand = new Random(23521);
+        final List<Map<String,Object>> allReviewData = new ArrayList<>(Database.loadData("strain_reviews", "strain_id", "review_rating", "review_profile"));
+        Map<String, List<Pair<String,Integer>>> profileData = new ReviewsModel(allReviewData).getProfileToReviewMap();
+        List<String> allProfiles = new ArrayList<>(profileData.keySet());
+        Collections.shuffle(allProfiles, new Random(2352));
+        final List<String> trainProfiles = allProfiles.subList(0, allProfiles.size()-numTests);
+        final List<String> testProfiles = allProfiles.subList(allProfiles.size()-numTests, allProfiles.size());
 
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
+        List<Map<String,Object>> trainData = trainProfiles.stream().flatMap(profile->profileData.get(profile).stream().map(pair->{
+            Map<String,Object> map = new HashMap<>();
+            map.put("strain_id", pair.getKey());
+            map.put("review_rating", pair.getValue());
+            map.put("review_profile", profile);
+            return map;
+        })).collect(Collectors.toList());
 
-        //Get the variational autoencoder layer
-        org.deeplearning4j.nn.layers.variational.VariationalAutoencoder vae
-                = (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) net.getLayer(0);
+        List<Map<String,Object>> testData = testProfiles.stream().flatMap(profile->profileData.get(profile).stream().map(pair->{
+            Map<String,Object> map = new HashMap<>();
+            map.put("strain_id", pair.getKey());
+            map.put("review_rating", pair.getValue());
+            map.put("review_profile", profile);
+            return map;
+        })).collect(Collectors.toList());
 
+        List<String> profiles = Database.loadProfiles();
+        List<String> strains = Database.loadStrains();
 
-        //Test data for plotting
-        DataSet testdata = new MnistDataSetIterator(10000, false, rngSeed).next();
-        INDArray testFeatures = testdata.getFeatures();
-        INDArray testLabels = testdata.getLabels();
-        INDArray latentSpaceGrid = getLatentSpaceGrid(plotMin, plotMax, plotNumSteps);              //X/Y grid values, between plotMin and plotMax
+        PCA model = getPCAModel(trainData, profiles, strains);
 
-        //Lists to store data for later plotting
-        List<INDArray> latentSpaceVsEpoch = new ArrayList<>(nEpochs + 1);
-        INDArray latentSpaceValues = vae.activate(testFeatures, false, LayerWorkspaceMgr.noWorkspaces());                     //Collect and record the latent space values before training starts
-        latentSpaceVsEpoch.add(latentSpaceValues);
-        List<INDArray> digitsGrid = new ArrayList<>();
+        projection(model, testData, profiles, strains);
+    }
 
-
-        //Add a listener to the network that, every N=100 minibatches:
-        // (a) collect the test set latent space values for later plotting
-        // (b) collect the reconstructions at each point in the grid
-        net.setListeners(new PlottingListener(100, testFeatures, latentSpaceGrid, latentSpaceVsEpoch, digitsGrid));
-
-        //Perform training
-        for (int i = 0; i < nEpochs; i++) {
-            log.info("Starting epoch {} of {}",(i+1),nEpochs);
-            net.pretrain(trainIter);    //Note use of .pretrain(DataSetIterator) not fit(DataSetIterator) for unsupervised training
+    public static double[][] getDataFrom(List<Map<String,Object>> reviewData, List<String> profiles, List<String> strains) {
+        Map<String, Integer> profileIdxMap = new HashMap<>();
+        Map<String, Integer> strainIdxMap = new HashMap<>();
+        for (int i = 0; i < profiles.size(); i++) {
+            profileIdxMap.put(profiles.get(i), i);
         }
+        for (int i = 0; i < strains.size(); i++) {
+            strainIdxMap.put(strains.get(i), i);
+        }
+        double[][] data = new double[profiles.size()][strains.size()];
+        int[][] counts = new int[profiles.size()][strains.size()];
+        for (Map<String, Object> review : reviewData) {
+            Integer profileIdx = profileIdxMap.get(review.get("review_profile").toString());
+            Integer strainIdx = strainIdxMap.get(review.get("strain_id").toString());
+            double rating = ((Integer) review.get("review_rating")).doubleValue() - 2.5;
+            if (profileIdx != null && strainIdx != null) {
+                data[profileIdx][strainIdx] += rating;
+                counts[profileIdx][strainIdx]++;
+            }
+        }
+        for (int i = 0; i < data.length; i++) {
+            double[] row = data[i];
+            for (int j = 0; j < row.length; j++) {
+                int c = counts[i][j];
+                if (c > 0) {
+                    data[i][j] /= c;
+                }
+            }
+        }
+        return data;
+    }
+
+    public static PCA getPCAModel(List<Map<String,Object>> reviewData, List<String> profiles, List<String> strains) {
+        return new PCA(getDataFrom(reviewData, profiles, strains));
+    }
+
+    public static double[][] projection(PCA model, List<Map<String,Object>> reviewData, List<String> profiles, List<String> strains) {
+        return model.project(getDataFrom(reviewData, profiles, strains));
     }
 }
