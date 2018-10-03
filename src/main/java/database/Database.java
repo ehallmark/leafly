@@ -46,6 +46,18 @@ public class Database {
         return data;
     }
 
+    public static Map<String,List<String>> loadSubTypesByType() throws SQLException {
+        Map<String,List<String>> data = new HashMap<>();
+        PreparedStatement ps = conn.prepareStatement("select distinct type, subtype from products");
+        ResultSet rs = ps.executeQuery();
+        while(rs.next()) {
+            String id = rs.getString(1);
+            data.putIfAbsent(id, new ArrayList<>());
+            data.get(id).add(rs.getString(2));
+        }
+        return data;
+    }
+
     public static double[][] loadSimilarityMatrix(String table, String key, String valKey, List<String> labels) throws SQLException {
         Map<String,List<Object>> data = loadMap(table, key, valKey);
         double[][] matrix = new double[labels.size()][labels.size()];

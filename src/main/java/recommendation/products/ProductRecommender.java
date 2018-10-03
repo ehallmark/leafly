@@ -139,6 +139,22 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         TYPE_MAP.put("othervaping", 0.0);
         TYPE_MAP.put("otherapparel", 0.0);
         TYPE_MAP.put("vapingapparel", 0.0);
+        try {
+            Map<String,List<String>> subTypesByType = Database.loadSubTypesByType();
+            subTypesByType.forEach((type, subtypes)-> {
+                int n = subtypes.size();
+                for (int i = 0; i < n; i++) {
+                    String t1 = subtypes.get(i);
+                    TYPE_MAP.put(t1+type, 0.5);
+                    for (int j = i + 1; j < n; j++) {
+                        String t2 = subtypes.get(j);
+                        TYPE_MAP.put(t1 + t2, 1.0 / subtypes.size());
+                    }
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     private StrainRecommender strainRecommender;
     private List<String> products;
