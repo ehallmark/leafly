@@ -5,16 +5,20 @@ import lombok.NonNull;
 import lombok.Setter;
 
 public class ProductRecommendation {
-    @Getter
-    @Setter
+    @Getter @Setter
     private double overallSimilarity;
-    @Getter
-    @Setter
+    @Getter @Setter
     private double strainSimilarity;
-    @Getter
-    @Setter
+    @Getter @Setter
+    private double brandSimilarity;
+    @Getter @Setter
+    private double nameSimilarity;
+    @Getter @Setter
+    private double reviewSimilarity;
+    @Getter @Setter
+    private double typeSimilarity;
+    @Getter @Setter
     private String productId;
-
     public ProductRecommendation(@NonNull String productId) {
         this.productId = productId;
     }
@@ -22,7 +26,11 @@ public class ProductRecommendation {
     @Override
     public String toString() {
         return "Product: " + productId + "\n\tSimilarity: " + formatDouble(overallSimilarity)
-                + "\n\tStrain Similarity: " + strainSimilarity;
+                + "\n\tStrain Similarity: " + strainSimilarity
+                + "\n\tStrain Similarity: " + brandSimilarity
+                + "\n\tStrain Similarity: " + typeSimilarity
+                + "\n\tStrain Similarity: " + reviewSimilarity
+                + "\n\tStrain Similarity: " + nameSimilarity;
     }
 
     private static String formatDouble(double x) {

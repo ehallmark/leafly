@@ -44,14 +44,42 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
     }
 
     public ProductRecommendation recommendationScoreFor(@NonNull String _productId, Map<String, Object> data) {
-        ProductRecommendation productRecommendation = new ProductRecommendation(_productId);
-
         Map<String,Double> strainSimilarityMap = (Map<String,Double>) data.get("strainSimilarityMap");
+        Map<String,Double> knownBrands = (Map<String,Double>)data.get("knownBrands");
+        Map<String,Double> knownTypesAndSubTypes = (Map<String,Double>)data.get("knownTypesAndSubTypes");
+        Map<String,Double> rScores = (Map<String,Double>)data.get("rScores");
+        Map<String,Double> previousStrainRatings = (Map<String,Double>)data.get("previousStrainRatings");
+        Map<String,Double> previousProductRatings = (Map<String,Double>)data.get("previousProductRatings");
+        double alpha = (Double)data.get("alpha");
 
-        // double strainSim = strainRecommender.recommendationScoreFor()
-        // productRecommendation.setStrainSimilarity(strainSim);
-
-        return productRecommendation;
+        Map<String, Double> brands = brandData.getOrDefault(_productId, Collections.emptyList())
+                .stream().collect(Collectors.toMap(Object::toString, e->1d));
+        Map<String, Double> types = typeData.getOrDefault(_productId, Collections.emptyList())
+                .stream().collect(Collectors.toMap(Object::toString, e->1d));
+        Map<String, Double> subtypes = subTypeData.getOrDefault(_productId, Collections.emptyList())
+                .stream().collect(Collectors.toMap(Object::toString, e->1d));
+        Map<String,Double> typesAndSubTypes = new HashMap<>(types);
+        typesAndSubTypes.putAll(subtypes);
+        double sScore = previousStrainRatings.entrySet().stream().filter(e->e.getValue()>=4).mapToDouble(e->{
+            return strainSimilarityMap.getOrDefault(e.getKey(), 0d);
+        }).average().orElse(0d);
+        double bScore = brandSimilarity.similarity(brands, knownBrands);
+        double tScore = typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubTypes);
+        double rScore = rScores.getOrDefault(_productId, 0d);
+        //double rcScore = rcScores.getOrDefault(_strain, 0);
+        double nScore = previousProductRatings.keySet().stream()
+                .mapToDouble(product->
+                        nameSimilarity.similarity(_productId, product))
+                .average().orElse(0d);
+        ProductRecommendation recommendation = new ProductRecommendation(_productId);
+        recommendation.setBrandSimilarity(bScore);
+        recommendation.setTypeSimilarity(tScore);
+        recommendation.setReviewSimilarity(rScore);
+        recommendation.setNameSimilarity(nScore);
+        recommendation.setStrainSimilarity(sScore);
+        double score = bScore + rScore + tScore + nScore + sScore;
+        recommendation.setOverallSimilarity(score * alpha);
+        return recommendation;
     }
 
     public List<ProductRecommendation> topRecommendations(int n, @NonNull Map<String,Object> data) {
