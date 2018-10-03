@@ -43,6 +43,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
 
     }
 
+    @Override
     public ProductRecommendation recommendationScoreFor(@NonNull String _productId, Map<String, Object> data) {
         Map<String,Double> strainSimilarityMap = (Map<String,Double>) data.get("strainSimilarityMap");
         Map<String,Double> knownBrands = (Map<String,Double>)data.get("knownBrands");
@@ -82,6 +83,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         return recommendation;
     }
 
+    @Override
     public List<ProductRecommendation> topRecommendations(int n, @NonNull Map<String,Object> data) {
         Map<String,Double> _previousProductRatings = (Map<String,Double>)data.get("previousProductRatings");
         Map<String,Double> previousProductRatings = _previousProductRatings.entrySet().stream()
