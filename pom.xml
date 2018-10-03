@@ -165,5 +165,11 @@
             <artifactId>deeplearning4j-core</artifactId>
             <version>1.0.0-beta2</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/com.mkobos/pca_transform -->
+        <dependency>
+            <groupId>com.mkobos</groupId>
+            <artifactId>pca_transform</artifactId>
+            <version>1.0.2</version>
+        </dependency>
     </dependencies>
 </project>

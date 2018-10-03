@@ -23,8 +23,6 @@ public class Recommendation {
     @Getter @Setter
     private double lineageSimilarity;
     @Getter @Setter
-    private double numReviews;
-    @Getter @Setter
     private String strain;
     public Recommendation(@NonNull String strain) {
         this.strain=strain;
@@ -38,8 +36,7 @@ public class Recommendation {
                 "\n\t\tReview Similarity: "+formatDouble(reviewSimilarity) +
                 "\n\t\tType Similarity: "+formatDouble(typeSimilarity) +
                 "\n\t\tLineage Similarity: "+formatDouble(lineageSimilarity) +
-                "\n\t\tName Similarity: "+formatDouble(nameSimilarity) +
-                "\n\t\tNum Reviews: "+numReviews;
+                "\n\t\tName Similarity: "+formatDouble(nameSimilarity);
     }
 
     private static String formatDouble(double x) {

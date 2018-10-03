@@ -5,9 +5,6 @@ import database.Database;
 import j2html.tags.ContainerTag;
 import recommendation.Recommendation;
 import recommendation.Recommender;
-import recommendation.TrainRecommender;
-import smile.classification.LogisticRegression;
-import smile.classification.SoftClassifier;
 
 import java.io.File;
 import java.util.Collections;
@@ -33,8 +30,6 @@ public class Main {
                 .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue().stream().map(o->o.toString()).limit(5).collect(Collectors.toList())));
 
         Recommender recommender = new Recommender();
-
-        SoftClassifier<double[]> logit = TrainRecommender.loadClassificationModel();
 
         get("/", (req, res)->{
             req.session(true);
@@ -69,13 +64,12 @@ public class Main {
             } else {
                 System.out.println("Recommend strains for: " + String.join(", ", favoriteStrains));
 
-
                 Map<String, Double> ratings = new HashMap<>();
                 for (String favoriteStrain : favoriteStrains) {
                     ratings.put(favoriteStrain, 5d);
                 }
 
-                List<Recommendation> topRecommendations = recommender.topRecommendations(5, ratings, logit);
+                List<Recommendation> topRecommendations = recommender.topRecommendations(5, ratings, 50);
 
                 html = div().withClass("col-12").with(
                         topRecommendations.stream().map(recommendation -> {
