@@ -24,6 +24,8 @@ public class Main {
         staticFiles.externalLocation(new File("public").getAbsolutePath());
         // get strain data
         List<Map<String,Object>> strainData = Database.loadData("strains", "id", "name", "type");
+        List<Map<String,Object>> productData = Database.loadData("products", "product_id", "product_name", "type", "subtype", "brand_name");
+
         Map<String,String> nameMap = Database.loadMap("strains", "id", "name").entrySet()
                 .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue().get(0).toString()));
         Map<String,List<String>> linkMap = Database.loadMap("strain_photos", "strain_id", "photo_url").entrySet()
@@ -41,10 +43,14 @@ public class Main {
                         div().withClass("col-12").with(
                                 h5("Select Favorite Strains and Products"),
                                 form().withClass("strain_recommendation").with(
-                                        select().withName("favorite_strains[]").withClass("strain_selection").attr("multiple").with(option()).with(
+                                        label("Strains").with(br(),select().withName("favorite_strains[]").withClass("strain_selection").attr("multiple").with(option()).with(
                                                 strainData.stream().map(strain->option(strain.get("name").toString()+" - ("+strain.get("type")+")").withValue((String)strain.get("id")))
                                                 .collect(Collectors.toList())
-                                        ),
+                                        )),br(),
+                                        label("Products").with(br(),select().withName("favorite_products[]").withClass("product_selection").attr("multiple").with(option()).with(
+                                                productData.stream().map(product->option().withText(product.get("product_name").toString()+" by ").with(b(product.get("brand_name").toString())).withText("("+product.get("type")+"/"+product.get("subtype")+")").withValue((String)product.get("product_id")))
+                                                        .collect(Collectors.toList())
+                                        )),
                                         button("Suggest").withClass("btn btn-sm btn-outline-primary")
                                 )
                         ),div().withClass("col-12").with(
