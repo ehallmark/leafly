@@ -51,7 +51,7 @@ public class ProductScraper {
                 .map(elem->elem.attr("href")).collect(Collectors.toList());
 
         for(String href : links) {
-            if(href.equals("/products")) continue;
+            if(href.split("/").length<3) continue;
             url = "https://www.leafly.com/" + href;
             String id =  href.replace("/", "_");
             String type = href.split("/")[2].trim().toLowerCase();
@@ -80,11 +80,13 @@ public class ProductScraper {
                 Document doc = Jsoup.parse(page);
                 Elements seeAllLinks = doc.select("a.heading-cta[href]");
                 for(Element seeAll : seeAllLinks) {
+                    if(seeAll.attr("href").split("/").length<4) break;
+                    String subtype = seeAll.attr("href").split("/")[3].trim().toLowerCase();
                     while(seeAll!=null) {
                         String seeAllHref = seeAll.attr("href");
                         String seeAllId = seeAllHref.replace("/", "_");
                         String seeAllUrl = "https://www.leafly.com" + seeAllHref;
-                        String subtype = seeAllHref.split("/")[3].trim().toLowerCase();
+                        System.out.println("HREF: "+seeAllHref);
                         File seeAllFile = new File(new File(folder, "products"), seeAllId.replace("?",""));
                         if(!seeAllFile.exists()||reseed) {
                             driver.get(seeAllUrl);
