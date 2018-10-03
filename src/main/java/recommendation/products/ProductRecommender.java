@@ -22,13 +22,16 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
     private ProductReviewModel productReviewModel;
     private SimilarityEngine brandSimilarity;
     private SimilarityEngine typeSimilarity;
+    private StringSimilarity nameSimilarity;
     public ProductRecommender() throws SQLException {
         strainRecommender = new StrainRecommender();
         this.products = Database.loadProducts();
-        productReviewModel = new ProductReviewModel();
+        productReviewModel = new ProductReviewModel(this.products, Database.loadData("product_reviews",
+                "product_id", "author", "rating", "upvotes", "downvotes"));
         brandSimilarity = new SimilarityEngine(Database.loadBrands());
         List<String> types = new ArrayList<>(Database.loadTypes());
         types.addAll(Database.loadSubTypes());
+        nameSimilarity = new StringSimilarity();
         typeSimilarity = new SimilarityEngine(types);
     }
 
@@ -57,11 +60,12 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
             throw new RuntimeException("Unable to get recommendations without previous strain ratings...");
         }
         Set<String> previousProducts = new HashSet<>(previousProductRatings.keySet());
+        List<String> goodProducts = new ArrayList<>(previousProducts);
         String currentProductId = (String) data.get("currentProductId");
         double alpha = (Double)data.get("alpha");
         Map<String,Double> knownTypesAndSubtypes = new HashMap<>();
         Map<String,Double> knownBrands = new HashMap<>();
-        Map<String,Double> rScores = productReviewModel.similarity(previousProductRatings);
+        Map<String,Double> rScores = productReviewModel.similarity(goodProducts);
 
         Map<String,Double> strainSimilarityMap = strainRecommender
                 .topRecommendations(-1, data)
