@@ -27,10 +27,10 @@ public class ProductRecommendation {
     public String toString() {
         return "Product: " + productId + "\n\tSimilarity: " + formatDouble(overallSimilarity)
                 + "\n\tStrain Similarity: " + strainSimilarity
-                + "\n\tStrain Similarity: " + brandSimilarity
-                + "\n\tStrain Similarity: " + typeSimilarity
-                + "\n\tStrain Similarity: " + reviewSimilarity
-                + "\n\tStrain Similarity: " + nameSimilarity;
+                + "\n\tBrand Similarity: " + brandSimilarity
+                + "\n\tType Similarity: " + typeSimilarity
+                + "\n\tReview Similarity: " + reviewSimilarity
+                + "\n\tName Similarity: " + nameSimilarity;
     }
 
     private static String formatDouble(double x) {
