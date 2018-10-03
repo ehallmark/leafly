@@ -55,42 +55,6 @@ public class Recommender {
         System.out.println("Effect data size: "+effectData.size());
     }
 
-    public Recommendation recommendationScoreFor(@NonNull String _strain, @NonNull Map<String,Double> previousStrainRatings, double alpha) {
-        Map<String,Double> knownFlavors = new HashMap<>();
-        Map<String,Double> knownEffects = new HashMap<>();
-        Map<String,Double> knownTypes = new HashMap<>();
-        Map<String,Double> knownLineage = new HashMap<>();
-        previousStrainRatings.forEach((strain, score)->{
-            Map<String,Double> prevEffects = effectData.getOrDefault(strain, Collections.emptyMap());
-            List<String> prevFlavors = flavorData.getOrDefault(strain, Collections.emptyList())
-                    .stream().map(Object::toString).collect(Collectors.toList());
-            List<String> prevTypes = typeData.getOrDefault(strain, Collections.emptyList())
-                    .stream().map(Object::toString).collect(Collectors.toList());
-            Collection<String> prevLineage = lineageGraph.getAncestorsOf(strain);
-            for(String effect : prevEffects.keySet()) {
-                knownEffects.putIfAbsent(effect, 0d);
-                knownEffects.put(effect, knownEffects.get(effect)+prevEffects.get(effect));
-            }
-            for(String flavor : prevFlavors) {
-                knownFlavors.putIfAbsent(flavor, 0d);
-                knownFlavors.put(flavor, knownFlavors.get(flavor)+1d);
-            }
-            for(String ancestorId : prevLineage) {
-                knownLineage.putIfAbsent(ancestorId, 0d);
-                knownLineage.put(ancestorId, knownLineage.get(ancestorId)+1d);
-            }
-            for(String type : prevTypes) {
-                knownTypes.putIfAbsent(type, 0d);
-                knownTypes.put(type, knownTypes.get(type)+1d);
-            }
-        });
-        List<String> goodRatings = previousStrainRatings.entrySet()
-                .stream().filter(e->e.getValue()>=5).map(e->e.getKey()).collect(Collectors.toList());
-        final Map<String,Double> rScores = reviewsModel.similarity(goodRatings);
-        return recommendationScoreFor(_strain, previousStrainRatings,
-                knownEffects, knownFlavors, knownLineage, knownTypes, rScores, alpha);
-    }
-
     public Recommendation recommendationScoreFor(@NonNull String _strain, Map<String,Double> previousStrainRatings,
                                                  Map<String,Double> knownEffects, Map<String,Double> knownFlavors, Map<String,Double> knownLineage,
                                                  Map<String,Double> knownTypes, Map<String,Double> rScores, double alpha) {

@@ -69,7 +69,7 @@ public class Main {
                     ratings.put(favoriteStrain, 5d);
                 }
 
-                List<Recommendation> topRecommendations = recommender.topRecommendations(5, ratings, 50);
+                List<Recommendation> topRecommendations = recommender.topRecommendations(5, ratings, 0.2);
 
                 html = div().withClass("col-12").with(
                         topRecommendations.stream().map(recommendation -> {
