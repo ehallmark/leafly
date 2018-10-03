@@ -99,16 +99,24 @@ public class Database {
         return loadSingleColumn("profile", "profiles");
     }
 
+    public static List<String> loadBrands() throws SQLException {
+        return loadSingleColumn("brand", "brands");
+    }
+
+    public static List<String> loadTypes() throws SQLException {
+        return loadSingleColumn("type", "product_types");
+    }
+
+    public static List<String> loadSubTypes() throws SQLException {
+        return loadSingleColumn("subtype", "product_subtypes");
+    }
+
     public static List<String> loadProducts() throws SQLException {
         return loadSingleColumn("product_id", "products");
     }
 
     public static List<String> loadFlavors() throws SQLException {
         return loadSingleColumn("flavor", "flavors");
-    }
-
-    public static List<String> loadParentStrains() throws SQLException {
-        return loadSingleColumn("strain_id", "parent_strains");
     }
 
     public static List<String> loadStrains() throws SQLException {

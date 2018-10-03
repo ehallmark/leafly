@@ -54,6 +54,7 @@ public class ProductScraper {
             if(href.equals("/products")) continue;
             url = "https://www.leafly.com/" + href;
             String id =  href.replace("/", "_");
+            String type = href.split("/")[2].trim().toLowerCase();
 
             File overviewFile = new File(new File(folder, "products"),id);
             String page = null;
@@ -83,6 +84,7 @@ public class ProductScraper {
                         String seeAllHref = seeAll.attr("href");
                         String seeAllId = seeAllHref.replace("/", "_");
                         String seeAllUrl = "https://www.leafly.com" + seeAllHref;
+                        String subtype = seeAllHref.split("/")[3].trim().toLowerCase();
                         File seeAllFile = new File(new File(folder, "products"), seeAllId.replace("?",""));
                         if(!seeAllFile.exists()||reseed) {
                             driver.get(seeAllUrl);
@@ -123,7 +125,7 @@ public class ProductScraper {
                                         page = FileUtils.readFileToString(itemFile, Charsets.UTF_8);
                                     }
                                     productId = itemId;
-                                    handleProductPage(page, productId, conn);
+                                    handleProductPage(page, productId, conn, type, subtype);
                                 }
                                 if(itemLink.select(".rating").size()>0) {
                                     String itemHref = itemLink.attr("href")+"/reviews";
@@ -165,7 +167,7 @@ public class ProductScraper {
         conn.close();
     }
 
-    private static void handleProductPage(@NonNull String page, String productId, Connection conn) throws SQLException {
+    private static void handleProductPage(@NonNull String page, String productId, Connection conn, String type, String subtype) throws SQLException {
         Document document = Jsoup.parse(page);
         String brandName = document.select(".product-title .brand-name").text().trim();
         String productName = document.select(".product-title .product-name").text().trim();
@@ -176,7 +178,7 @@ public class ProductScraper {
         System.out.println("Brand: "+brandName+", Product: "+productName+", Price: "+productPrice+", Rating: "+starRating+"\nDescription: "+shortDescription+"\n"+description+"\n");
         Double productPriceDouble = productPrice.length()>0 ? Double.valueOf(productPrice.replace("$","").replace(",","")) : null;
         Double starRatingDouble = starRating!=null && starRating.length()>0 ? Double.valueOf(starRating) : null;
-        final PreparedStatement ps = conn.prepareStatement("insert into products (product_id,product_name, brand_name, short_description, description, price, rating, strain_id) values (?,?,?,?,?,?,?,?) on conflict (product_id) do nothing");
+        final PreparedStatement ps = conn.prepareStatement("insert into products (product_id,product_name, brand_name, short_description, description, price, rating, strain_id, type, subtype) values (?,?,?,?,?,?,?,?,?,?) on conflict (product_id) do nothing");
         Elements productStrain = document.select("article.product-strain");
         String strainId = null;
         if(productStrain.size()>0) {
@@ -190,6 +192,8 @@ public class ProductScraper {
         ps.setObject(6, productPriceDouble);
         ps.setObject(7, starRatingDouble);
         ps.setObject(8, strainId);
+        ps.setString(9, type);
+        ps.setString(10, subtype);
         ps.executeUpdate();
         ps.close();
         conn.commit();

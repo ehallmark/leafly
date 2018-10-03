@@ -20,10 +20,16 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
     private StrainRecommender strainRecommender;
     private List<String> products;
     private ProductReviewModel productReviewModel;
+    private SimilarityEngine brandSimilarity;
+    private SimilarityEngine typeSimilarity;
     public ProductRecommender() throws SQLException {
         strainRecommender = new StrainRecommender();
         this.products = Database.loadProducts();
         productReviewModel = new ProductReviewModel();
+        brandSimilarity = new SimilarityEngine(Database.loadBrands());
+        List<String> types = new ArrayList<>(Database.loadTypes());
+        types.addAll(Database.loadSubTypes());
+        typeSimilarity = new SimilarityEngine(types);
     }
 
     public ProductRecommendation recommendationScoreFor(@NonNull String _productId, Map<String, Object> data) {
@@ -53,8 +59,8 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         Set<String> previousProducts = new HashSet<>(previousProductRatings.keySet());
         String currentProductId = (String) data.get("currentProductId");
         double alpha = (Double)data.get("alpha");
-        Map<String,Double> knownTypes = new HashMap<>();
-        Map<String,Double> knownSubtypes = new HashMap<>();
+        Map<String,Double> knownTypesAndSubtypes = new HashMap<>();
+        Map<String,Double> knownBrands = new HashMap<>();
         Map<String,Double> rScores = productReviewModel.similarity(previousProductRatings);
 
         Map<String,Double> strainSimilarityMap = strainRecommender

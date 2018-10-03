@@ -83,7 +83,9 @@ create table products (
     description text,
     price double precision,
     rating double precision,
-    strain_id text
+    strain_id text,
+    type text not null,
+    subtype text not null
 );
 
 drop table product_reviews;
@@ -98,7 +100,23 @@ create table product_reviews (
     primary key(product_id, review_num)
 );
 
+drop table brands;
+create table brands (
+    brand_name text primary key
+);
+insert into brands ( select distinct brand_name from product_reviews );
 
+drop table product_types;
+create table product_types (
+    type text primary key
+);
+insert into product_types ( select distinct type from products );
+
+drop table product_subtypes;
+create table product_subtypes (
+    subtype text primary key
+);
+insert into product_subtypes ( select distinct subtype from products );
 
 \copy strains to /home/ehallmark/Downloads/strains.csv delimiter ',' csv header;
 \copy strain_reviews to /home/ehallmark/Downloads/strain_reviews.csv delimiter ',' csv header;
