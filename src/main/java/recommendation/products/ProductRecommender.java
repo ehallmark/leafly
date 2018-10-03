@@ -67,7 +67,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
             return strainSimilarityMap.getOrDefault(strain, 0d);
         }).average().orElse(0d);
         double bScore = 0.5 * brandSimilarity.similarity(brands, knownBrands);
-        double tScore = typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubtypes);
+        double tScore = 0.25 * typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubtypes);
         double rScore = 5d * rScores.getOrDefault(_productId, 0d);
         double nScore = 0.5 * previousProductRatings.keySet().stream()
                 .mapToDouble(product->
