@@ -20,6 +20,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
     private StrainRecommender strainRecommender;
     private List<String> products;
     private Map<String,List<Object>> brandData;
+    private Map<String,List<Object>> strainData;
     private Map<String,List<Object>> typeData;
     private Map<String,List<Object>> subTypeData;
     private ProductReviewModel productReviewModel;
@@ -37,6 +38,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         nameSimilarity = new StringSimilarity(4);
         typeSimilarity = new SimilarityEngine(types);
 
+        strainData = Database.loadMap("products", "product_id", "strain_id");
         brandData = Database.loadMap("products", "product_id", "brand_name");
         subTypeData = Database.loadMap("products", "product_id", "subtype");
         typeData = Database.loadMap("products", "product_id", "type");
@@ -49,10 +51,10 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         Map<String,Double> knownBrands = (Map<String,Double>)data.get("knownBrands");
         Map<String,Double> knownTypesAndSubtypes = (Map<String,Double>)data.get("knownTypesAndSubtypes");
         Map<String,Double> rScores = (Map<String,Double>)data.get("rScores");
-        Map<String,Double> previousStrainRatings = (Map<String,Double>)data.get("previousStrainRatings");
         Map<String,Double> previousProductRatings = (Map<String,Double>)data.get("previousProductRatings");
         double alpha = (Double)data.get("alpha");
-
+        List<String> associatedStrains = strainData.getOrDefault(_productId, Collections.emptyList())
+                .stream().filter(o->o!=null).map(Object::toString).collect(Collectors.toList());
         Map<String, Double> brands = brandData.getOrDefault(_productId, Collections.emptyList())
                 .stream().collect(Collectors.toMap(Object::toString, e->1d));
         Map<String, Double> types = typeData.getOrDefault(_productId, Collections.emptyList())
@@ -61,13 +63,12 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
                 .stream().collect(Collectors.toMap(Object::toString, e->1d));
         Map<String,Double> typesAndSubTypes = new HashMap<>(types);
         typesAndSubTypes.putAll(subtypes);
-        double sScore = 2d * previousStrainRatings.entrySet().stream().filter(e->e.getValue()>=4).mapToDouble(e->{
-            return strainSimilarityMap.getOrDefault(e.getKey(), 0d);
+        double sScore = 2d * associatedStrains.stream().mapToDouble(strain->{
+            return strainSimilarityMap.getOrDefault(strain, 0d);
         }).average().orElse(0d);
         double bScore = 0.5 * brandSimilarity.similarity(brands, knownBrands);
         double tScore = typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubtypes);
         double rScore = 5d * rScores.getOrDefault(_productId, 0d);
-        //double rcScore = rcScores.getOrDefault(_strain, 0);
         double nScore = 0.5 * previousProductRatings.keySet().stream()
                 .mapToDouble(product->
                         nameSimilarity.similarity(_productId, product))
