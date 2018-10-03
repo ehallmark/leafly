@@ -128,8 +128,8 @@ public class Main {
                 recData.put("alpha", 0.2);
                 recData.put("previousStrainRatings", strainRatings);
                 recData.put("previousProductRatings", productRatings);
-                List<ProductRecommendation> topProductRecommendations = productRecommender.topRecommendations(5, recData);
-                List<StrainRecommendation> topStrainRecommendations = strainRecommender.topRecommendations(20, recData);
+                List<ProductRecommendation> topProductRecommendations = productRecommender.topRecommendations(20, recData);
+                List<StrainRecommendation> topStrainRecommendations = strainRecommender.topRecommendations(10, recData);
 
                 html = div().withClass("col-12").with(
                         div().withClass("row").with(
