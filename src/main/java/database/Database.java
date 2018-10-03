@@ -100,7 +100,7 @@ public class Database {
     }
 
     public static List<String> loadBrands() throws SQLException {
-        return loadSingleColumn("brand", "brands");
+        return loadSingleColumn("brand_name", "brands");
     }
 
     public static List<String> loadTypes() throws SQLException {

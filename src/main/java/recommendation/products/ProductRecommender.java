@@ -47,7 +47,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
     public ProductRecommendation recommendationScoreFor(@NonNull String _productId, Map<String, Object> data) {
         Map<String,Double> strainSimilarityMap = (Map<String,Double>) data.get("strainSimilarityMap");
         Map<String,Double> knownBrands = (Map<String,Double>)data.get("knownBrands");
-        Map<String,Double> knownTypesAndSubTypes = (Map<String,Double>)data.get("knownTypesAndSubTypes");
+        Map<String,Double> knownTypesAndSubtypes = (Map<String,Double>)data.get("knownTypesAndSubtypes");
         Map<String,Double> rScores = (Map<String,Double>)data.get("rScores");
         Map<String,Double> previousStrainRatings = (Map<String,Double>)data.get("previousStrainRatings");
         Map<String,Double> previousProductRatings = (Map<String,Double>)data.get("previousProductRatings");
@@ -65,7 +65,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
             return strainSimilarityMap.getOrDefault(e.getKey(), 0d);
         }).average().orElse(0d);
         double bScore = brandSimilarity.similarity(brands, knownBrands);
-        double tScore = typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubTypes);
+        double tScore = typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubtypes);
         double rScore = rScores.getOrDefault(_productId, 0d);
         //double rcScore = rcScores.getOrDefault(_strain, 0);
         double nScore = previousProductRatings.keySet().stream()
