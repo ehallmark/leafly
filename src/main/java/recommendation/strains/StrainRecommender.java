@@ -140,7 +140,7 @@ public class StrainRecommender implements Recommender<StrainRecommendation> {
         data.put("knownTypes", knownTypes);
         data.put("rScores", rScores);
         data.put("alpha", alpha);
-        Stream<StrainRecommendation> stream = strains.stream().filter(strain->!previousStrains.contains(strain)).map(_strain->{
+        Stream<StrainRecommendation> stream = strains.stream().filter(strain->n<0||!previousStrains.contains(strain)).map(_strain->{
             return recommendationScoreFor(_strain, data);
         });
         if(n > 0) {
