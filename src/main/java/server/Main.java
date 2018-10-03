@@ -3,6 +3,8 @@ package server;
 import com.google.gson.Gson;
 import database.Database;
 import j2html.tags.ContainerTag;
+import recommendation.products.ProductRecommendation;
+import recommendation.products.ProductRecommender;
 import recommendation.strains.StrainRecommendation;
 import recommendation.strains.StrainRecommender;
 
@@ -36,8 +38,11 @@ public class Main {
                 .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue().get(0).toString()));
         Map<String,List<String>> linkMap = Database.loadMap("strain_photos", "strain_id", "photo_url").entrySet()
                 .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue().stream().map(o->o.toString()).limit(5).collect(Collectors.toList())));
+        Map<String,List<String>> productNameMap = Database.loadMap("products", "product_id", "product_name").entrySet()
+                .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue().stream().map(o->o.toString()).limit(1).collect(Collectors.toList())));
 
-        StrainRecommender recommender = new StrainRecommender();
+        StrainRecommender strainRecommender = new StrainRecommender();
+        ProductRecommender productRecommender = new ProductRecommender();
 
         get("/products_ajax", (req,res)->{
             Map<String,Object> response = new HashMap<>();
@@ -103,24 +108,47 @@ public class Main {
 
         post("/recommend", (req, res) -> {
             String[] favoriteStrains = req.queryParamsValues("favorite_strains[]");
+            String[] favoriteProducts = req.queryParamsValues("favorite_products[]");
             String html;
             if(favoriteStrains==null || favoriteStrains.length==0) {
                 html = "Please select at least one favorite strain.";
+            } else  if(favoriteProducts==null || favoriteProducts.length==0) {
+                html = "Please select at least one favorite product.";
             } else {
                 System.out.println("Recommend strains for: " + String.join(", ", favoriteStrains));
-
-                Map<String, Double> ratings = new HashMap<>();
+                Map<String, Double> strainRatings = new HashMap<>();
+                Map<String, Double> productRatings = new HashMap<>();
                 for (String favoriteStrain : favoriteStrains) {
-                    ratings.put(favoriteStrain, 5d);
+                    strainRatings.put(favoriteStrain, 5d);
+                }
+                for(String favoriteProduct : favoriteProducts) {
+                    productRatings.put(favoriteProduct, 5d);
                 }
 
                 final Map<String,Object> recData = new HashMap<>();
                 recData.put("alpha", 0.2);
-                recData.put("previousStrainRatings", ratings);
-                List<StrainRecommendation> topRecommendations = recommender.topRecommendations(10, recData);
+                recData.put("previousStrainRatings", strainRatings);
+                recData.put("previousProductRatings", productRatings);
+                List<ProductRecommendation> topProductRecommendations = productRecommender.topRecommendations(10, recData);
+                List<StrainRecommendation> topStrainRecommendations = strainRecommender.topRecommendations(15, recData);
 
                 html = div().withClass("col-12").with(
-                        topRecommendations.stream().map(recommendation -> {
+                        h6("Products")
+                ).with(
+                        topProductRecommendations.stream().map(recommendation -> {
+                           // List<String> links = productLinkMap.getOrDefault(recommendation.getProductId(), Collections.emptyList());
+                            return div().with(b(String.join("",productNameMap.getOrDefault(recommendation.getProductId(), Collections.emptyList())))).with(br())
+                                   // .with(links.stream().map(link->img().withSrc(link)).collect(Collectors.toList()))
+                                    .with(
+                                            div().with(Stream.of(recommendation.toString().split("\\n")).map(line->{
+                                                return div(line);
+                                            }).collect(Collectors.toList()))
+                                    ).with(hr());
+                        }).collect(Collectors.toList())
+                ).with(
+                        h6("Strains")
+                ).with(
+                        topStrainRecommendations.stream().map(recommendation -> {
                             List<String> links = linkMap.getOrDefault(recommendation.getStrain(), Collections.emptyList());
                             return div().with(b(nameMap.get(recommendation.getStrain()))).with(br())
                                     .with(links.stream().map(link->img().withSrc(link)).collect(Collectors.toList()))
