@@ -128,35 +128,40 @@ public class Main {
                 recData.put("alpha", 0.2);
                 recData.put("previousStrainRatings", strainRatings);
                 recData.put("previousProductRatings", productRatings);
-                List<ProductRecommendation> topProductRecommendations = productRecommender.topRecommendations(10, recData);
-                List<StrainRecommendation> topStrainRecommendations = strainRecommender.topRecommendations(15, recData);
+                List<ProductRecommendation> topProductRecommendations = productRecommender.topRecommendations(5, recData);
+                List<StrainRecommendation> topStrainRecommendations = strainRecommender.topRecommendations(20, recData);
 
                 html = div().withClass("col-12").with(
-                        h6("Products")
-                ).with(
-                        topProductRecommendations.stream().map(recommendation -> {
-                           // List<String> links = productLinkMap.getOrDefault(recommendation.getProductId(), Collections.emptyList());
-                            return div().with(b(String.join("",productNameMap.getOrDefault(recommendation.getProductId(), Collections.emptyList())))).with(br())
-                                   // .with(links.stream().map(link->img().withSrc(link)).collect(Collectors.toList()))
-                                    .with(
-                                            div().with(Stream.of(recommendation.toString().split("\\n")).map(line->{
-                                                return div(line);
-                                            }).collect(Collectors.toList()))
-                                    ).with(hr());
-                        }).collect(Collectors.toList())
-                ).with(
-                        h6("Strains")
-                ).with(
-                        topStrainRecommendations.stream().map(recommendation -> {
-                            List<String> links = linkMap.getOrDefault(recommendation.getStrain(), Collections.emptyList());
-                            return div().with(b(nameMap.get(recommendation.getStrain()))).with(br())
-                                    .with(links.stream().map(link->img().withSrc(link)).collect(Collectors.toList()))
-                                    .with(
-                                    div().with(Stream.of(recommendation.toString().split("\\n")).map(line->{
-                                        return div(line);
-                                    }).collect(Collectors.toList()))
-                            ).with(hr());
-                        }).collect(Collectors.toList())
+                        div().withClass("row").with(
+                                div().withClass("col-6").with(
+                                        h6("Products")
+                                ).with(
+                                        topProductRecommendations.stream().map(recommendation -> {
+                                            // List<String> links = productLinkMap.getOrDefault(recommendation.getProductId(), Collections.emptyList());
+                                            return div().with(b(String.join("",productNameMap.getOrDefault(recommendation.getProductId(), Collections.emptyList())))).with(br())
+                                                    // .with(links.stream().map(link->img().withSrc(link)).collect(Collectors.toList()))
+                                                    .with(
+                                                            div().with(Stream.of(recommendation.toString().split("\\n")).map(line->{
+                                                                return div(line);
+                                                            }).collect(Collectors.toList()))
+                                                    ).with(hr());
+                                        }).collect(Collectors.toList())
+                                ),div().withClass("col-6").with(
+                                        h6("Strains")
+                                ).with(
+                                        topStrainRecommendations.stream().map(recommendation -> {
+                                            List<String> links = linkMap.getOrDefault(recommendation.getStrain(), Collections.emptyList());
+                                            return div().with(b(nameMap.get(recommendation.getStrain()))).with(br())
+                                                    .with(links.stream().map(link->img().withSrc(link)).collect(Collectors.toList()))
+                                                    .with(
+                                                            div().with(Stream.of(recommendation.toString().split("\\n")).map(line->{
+                                                                return div(line);
+                                                            }).collect(Collectors.toList()))
+                                                    ).with(hr());
+                                        }).collect(Collectors.toList())
+                                )
+                        )
+
                 ).render();
 
             }
