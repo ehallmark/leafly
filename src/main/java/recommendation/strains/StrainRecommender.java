@@ -1,15 +1,18 @@
-package strain_recommendation;
+package recommendation.strains;
 
 import com.google.common.base.Functions;
 import database.Database;
 import lombok.NonNull;
+import recommendation.Recommender;
+import recommendation.SimilarityEngine;
+import recommendation.StringSimilarity;
 
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class StrainRecommender {
+public class StrainRecommender implements Recommender<StrainRecommendation> {
     private SimilarityEngine effectSim;
     private SimilarityEngine typeSim;
     private SimilarityEngine flavorSim;
@@ -25,7 +28,7 @@ public class StrainRecommender {
         this(Database.loadData("strain_reviews", "strain_id", "review_rating", "review_profile"));
     }
 
-    public StrainRecommender(List<Map<String,Object>> reviewData) throws SQLException {
+    private StrainRecommender(List<Map<String,Object>> reviewData) throws SQLException {
         // initialize categorical data similarity engines
         List<String> effects = Database.loadEffects().stream().distinct().sorted().collect(Collectors.toList());
         List<String> flavors = Database.loadFlavors().stream().distinct().sorted().collect(Collectors.toList());
@@ -47,9 +50,16 @@ public class StrainRecommender {
         System.out.println("Effect data size: "+effectData.size());
     }
 
-    public StrainRecommendation recommendationScoreFor(@NonNull String _strain, Map<String,Double> previousStrainRatings,
-                                                       Map<String,Double> knownEffects, Map<String,Double> knownFlavors, Map<String,Double> knownLineage,
-                                                       Map<String,Double> knownTypes, Map<String,Double> rScores, double alpha) {
+    @Override
+    public StrainRecommendation recommendationScoreFor(@NonNull String _strain, Map<String,Object> data) {
+        Map<String,Double> knownEffects = (Map<String,Double>)data.get("knownEffects");
+        Map<String,Double> knownFlavors = (Map<String,Double>)data.get("knownFlavors");
+        Map<String,Double> knownLineage = (Map<String,Double>)data.get("knownLineage");
+        Map<String,Double> knownTypes = (Map<String,Double>)data.get("knownTypes");
+        Map<String,Double> rScores = (Map<String,Double>)data.get("rScores");
+        Map<String,Double> previousStrainRatings = (Map<String,Double>)data.get("previousStrainRatings");
+        double alpha = (Double)data.get("alpha");
+
         Map<String, Double> effects = effectData.getOrDefault(_strain, Collections.emptyMap());
         Map<String, Double> flavors = flavorData.getOrDefault(_strain, Collections.emptyList())
                 .stream().collect(Collectors.toMap(Object::toString, e->1d));
@@ -80,6 +90,7 @@ public class StrainRecommender {
         return recommendation;
     }
 
+    @Override
     public List<StrainRecommendation> topRecommendations(int n, @NonNull Map<String,Double> _previousStrainRatings, double alpha) {
         Set<String> previousStrains = new HashSet<>(_previousStrainRatings.keySet());
         Map<String,Double> previousStrainRatings = _previousStrainRatings.entrySet().stream()
@@ -120,9 +131,16 @@ public class StrainRecommender {
         List<String> goodRatings = previousStrainRatings.entrySet()
                 .stream().filter(e->e.getValue()>=5).map(e->e.getKey()).collect(Collectors.toList());
         final Map<String,Double> rScores = reviewsModel.similarity(goodRatings);
+        final Map<String,Object> data = new HashMap<>();
+        data.put("previousStrainRatings", previousStrainRatings);
+        data.put("knownEffects", knownEffects);
+        data.put("knownLineage", knownLineage);
+        data.put("knownFlavors", knownFlavors);
+        data.put("knownTypes", knownTypes);
+        data.put("rScores", rScores);
+        data.put("alpha", alpha);
         Stream<StrainRecommendation> stream = strains.stream().filter(strain->!previousStrains.contains(strain)).map(_strain->{
-            return recommendationScoreFor(_strain, previousStrainRatings,
-                    knownEffects, knownFlavors, knownLineage, knownTypes, rScores, alpha);
+            return recommendationScoreFor(_strain, data);
         });
         if(n > 0) {
             return stream.sorted((e1, e2) -> Double.compare(e2.getOverallSimilarity(), e1.getOverallSimilarity())).limit(n).collect(Collectors.toList());

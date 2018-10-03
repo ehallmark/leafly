@@ -3,8 +3,8 @@ package server;
 import com.google.gson.Gson;
 import database.Database;
 import j2html.tags.ContainerTag;
-import strain_recommendation.StrainRecommendation;
-import strain_recommendation.StrainRecommender;
+import recommendation.strains.StrainRecommendation;
+import recommendation.strains.StrainRecommender;
 
 import java.io.File;
 import java.util.Collections;

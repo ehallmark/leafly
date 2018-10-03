@@ -1,4 +1,4 @@
-package strain_recommendation;
+package recommendation;
 
 import javafx.util.Pair;
 import lombok.Getter;

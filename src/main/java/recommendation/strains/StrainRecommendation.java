@@ -1,10 +1,10 @@
-package product_recommendation;
+package recommendation.strains;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
-public class ProductRecommendation {
+public class StrainRecommendation {
     @Getter @Setter
     private double overallSimilarity;
     @Getter @Setter
@@ -21,7 +21,7 @@ public class ProductRecommendation {
     private double lineageSimilarity;
     @Getter @Setter
     private String strain;
-    public ProductRecommendation(@NonNull String strain) {
+    public StrainRecommendation(@NonNull String strain) {
         this.strain=strain;
     }
 

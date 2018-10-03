@@ -1,4 +1,4 @@
-package strain_recommendation;
+package recommendation;
 
 import java.util.Collection;
 import java.util.Map;

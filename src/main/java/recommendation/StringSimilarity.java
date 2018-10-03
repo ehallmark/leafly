@@ -1,4 +1,4 @@
-package strain_recommendation;
+package recommendation;
 
 import info.debatty.java.stringsimilarity.Cosine;
 import info.debatty.java.stringsimilarity.interfaces.StringDistance;

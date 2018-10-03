@@ -1,4 +1,4 @@
-package strain_recommendation;
+package recommendation.strains;
 
 import java.util.*;
 import java.util.stream.Collectors;
