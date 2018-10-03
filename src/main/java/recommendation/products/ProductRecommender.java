@@ -61,14 +61,14 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
                 .stream().collect(Collectors.toMap(Object::toString, e->1d));
         Map<String,Double> typesAndSubTypes = new HashMap<>(types);
         typesAndSubTypes.putAll(subtypes);
-        double sScore = previousStrainRatings.entrySet().stream().filter(e->e.getValue()>=4).mapToDouble(e->{
+        double sScore = 2d * previousStrainRatings.entrySet().stream().filter(e->e.getValue()>=4).mapToDouble(e->{
             return strainSimilarityMap.getOrDefault(e.getKey(), 0d);
         }).average().orElse(0d);
-        double bScore = brandSimilarity.similarity(brands, knownBrands);
+        double bScore = 0.5 * brandSimilarity.similarity(brands, knownBrands);
         double tScore = typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubtypes);
-        double rScore = rScores.getOrDefault(_productId, 0d);
+        double rScore = 5d * rScores.getOrDefault(_productId, 0d);
         //double rcScore = rcScores.getOrDefault(_strain, 0);
-        double nScore = previousProductRatings.keySet().stream()
+        double nScore = 0.5 * previousProductRatings.keySet().stream()
                 .mapToDouble(product->
                         nameSimilarity.similarity(_productId, product))
                 .average().orElse(0d);

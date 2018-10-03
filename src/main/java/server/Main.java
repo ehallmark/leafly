@@ -94,8 +94,7 @@ public class Main {
                                                 strainData.stream().map(strain->option(strain.get("name").toString()+" - ("+strain.get("type")+")").withValue((String)strain.get("id")))
                                                 .collect(Collectors.toList())
                                         )),br(),
-                                        label("Products").with(br(),select().attr("style", "width: 300px;").withName("favorite_products[]").withClass("product_selection").attr("multiple").with(option())),
-                                        button("Suggest").withClass("btn btn-sm btn-outline-primary")
+                                        label("Products").with(br(),select().attr("style", "width: 300px;").withName("favorite_products[]").withClass("product_selection").attr("multiple").with(option())),br(), br(),button("Suggest").withClass("btn btn-sm btn-outline-primary")
                                 )
                         ),div().withClass("col-12").with(
                                 h5("Recommendations"),
