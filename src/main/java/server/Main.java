@@ -39,7 +39,7 @@ public class Main {
                                 h4("Strain Recommendation System")
                         ),
                         div().withClass("col-12").with(
-                                h5("Select Favorite Strains"),
+                                h5("Select Favorite Strains and Products"),
                                 form().withClass("strain_recommendation").with(
                                         select().withName("favorite_strains[]").withClass("strain_selection").attr("multiple").with(option()).with(
                                                 strainData.stream().map(strain->option(strain.get("name").toString()+" - ("+strain.get("type")+")").withValue((String)strain.get("id")))
@@ -92,9 +92,6 @@ public class Main {
         });
 
     }
-
-
-
 
     private static ContainerTag htmlWrapper(ContainerTag inner) {
         return html().attr("style", "height: 100%;").with(
