@@ -91,7 +91,9 @@ public class StrainRecommender implements Recommender<StrainRecommendation> {
     }
 
     @Override
-    public List<StrainRecommendation> topRecommendations(int n, @NonNull Map<String,Double> _previousStrainRatings, double alpha) {
+    public List<StrainRecommendation> topRecommendations(int n, Map<String,Object> _data) {
+        Map<String,Double> _previousStrainRatings = (Map<String,Double>) _data.get("previousStrainRatings");
+        double alpha = (Double)_data.get("alpha");
         Set<String> previousStrains = new HashSet<>(_previousStrainRatings.keySet());
         Map<String,Double> previousStrainRatings = _previousStrainRatings.entrySet().stream()
                 .filter(e->e.getValue()>=3.5)

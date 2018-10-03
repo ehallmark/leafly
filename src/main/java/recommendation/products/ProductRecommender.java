@@ -30,7 +30,9 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         return productRecommendation;
     }
 
-    public List<ProductRecommendation> topRecommendations(int n, @NonNull Map<String,Double> _previousStrainRatings, double alpha) {
+    public List<ProductRecommendation> topRecommendations(int n, @NonNull Map<String,Object> data) {
+        Map<String,Double> previousStrainRatings = (Map<String,Double>)data.get("previousStrainRatings");
+        Map<String,Double> previousProductRatings = (Map<String,Double>)data.get("previousProductRatings");
         List<ProductRecommendation> recommendations = new ArrayList<>();
 
 

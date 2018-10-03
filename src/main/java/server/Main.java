@@ -69,7 +69,10 @@ public class Main {
                     ratings.put(favoriteStrain, 5d);
                 }
 
-                List<StrainRecommendation> topRecommendations = recommender.topRecommendations(5, ratings, 0.2);
+                final Map<String,Object> recData = new HashMap<>();
+                recData.put("alpha", 0.2);
+                recData.put("previousStrainRatings", ratings);
+                List<StrainRecommendation> topRecommendations = recommender.topRecommendations(5, recData);
 
                 html = div().withClass("col-12").with(
                         topRecommendations.stream().map(recommendation -> {
