@@ -19,6 +19,9 @@ import java.util.stream.Stream;
 public class ProductRecommender implements Recommender<ProductRecommendation> {
     private StrainRecommender strainRecommender;
     private List<String> products;
+    private Map<String,List<Object>> brandData;
+    private Map<String,List<Object>> typeData;
+    private Map<String,List<Object>> subTypeData;
     private ProductReviewModel productReviewModel;
     private SimilarityEngine brandSimilarity;
     private SimilarityEngine typeSimilarity;
@@ -33,6 +36,11 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         types.addAll(Database.loadSubTypes());
         nameSimilarity = new StringSimilarity();
         typeSimilarity = new SimilarityEngine(types);
+
+        brandData = Database.loadMap("products", "product_id", "brand_name");
+        subTypeData = Database.loadMap("products", "product_id", "subtype");
+        typeData = Database.loadMap("products", "product_id", "type");
+
     }
 
     public ProductRecommendation recommendationScoreFor(@NonNull String _productId, Map<String, Object> data) {
@@ -47,11 +55,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
     }
 
     public List<ProductRecommendation> topRecommendations(int n, @NonNull Map<String,Object> data) {
-        Map<String,Double> _previousStrainRatings = (Map<String,Double>)data.get("previousStrainRatings");
         Map<String,Double> _previousProductRatings = (Map<String,Double>)data.get("previousProductRatings");
-        Map<String,Double> previousStrainRatings = _previousStrainRatings.entrySet().stream()
-                .filter(e->e.getValue()>=3.5)
-                .collect(Collectors.toMap(e->e.getKey(), e->e.getValue()));
         Map<String,Double> previousProductRatings = _previousProductRatings.entrySet().stream()
                 .filter(e->e.getValue()>=3.5)
                 .collect(Collectors.toMap(e->e.getKey(), e->e.getValue()));
@@ -62,17 +66,41 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         Set<String> previousProducts = new HashSet<>(previousProductRatings.keySet());
         List<String> goodProducts = new ArrayList<>(previousProducts);
         String currentProductId = (String) data.get("currentProductId");
-        double alpha = (Double)data.get("alpha");
         Map<String,Double> knownTypesAndSubtypes = new HashMap<>();
         Map<String,Double> knownBrands = new HashMap<>();
         Map<String,Double> rScores = productReviewModel.similarity(goodProducts);
 
+        previousProductRatings.forEach((product, score)->{
+            List<String> prevBrands = brandData.getOrDefault(product, Collections.emptyList())
+                    .stream().map(Object::toString).collect(Collectors.toList());
+            List<String> prevTypes = typeData.getOrDefault(product, Collections.emptyList())
+                    .stream().map(Object::toString).collect(Collectors.toList());
+            List<String> prevSubTypes = subTypeData.getOrDefault(product, Collections.emptyList())
+                    .stream().map(Object::toString).collect(Collectors.toList());
+            for(String brand : prevBrands) {
+                knownBrands.putIfAbsent(brand, 0d);
+                knownBrands.put(brand, knownBrands.get(brand)+1d);
+            }
+            for(String type : prevTypes) {
+                knownTypesAndSubtypes.putIfAbsent(type, 0d);
+                knownTypesAndSubtypes.put(type, knownTypesAndSubtypes.get(type)+1d);
+            }
+            for(String subtype : prevSubTypes) {
+                knownTypesAndSubtypes.putIfAbsent(subtype, 0d);
+                knownTypesAndSubtypes.put(subtype, knownTypesAndSubtypes.get(subtype)+1d);
+            }
+        });
         Map<String,Double> strainSimilarityMap = strainRecommender
                 .topRecommendations(-1, data)
                 .stream().collect(Collectors.toMap(e->e.getStrain(),e->e.getOverallSimilarity()));
 
         Map<String,Object> newData = new HashMap<>(data);
         newData.put("strainSimilarityMap", strainSimilarityMap);
+        newData.put("currentProductId", currentProductId);
+        newData.put("knownBrands", knownBrands);
+        newData.put("knownTypesAndSubtypes", knownTypesAndSubtypes);
+        newData.put("rScores", rScores);
+        newData.put("alpha", 0.2);
 
         Stream<ProductRecommendation> stream = products.stream().filter(strain->!previousProducts.contains(strain)).map(product->{
             return recommendationScoreFor(product, newData);
