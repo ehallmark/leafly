@@ -44,7 +44,7 @@ public class StrainRecommender implements Recommender<StrainRecommendation> {
         effectData = Database.loadMapWithValue("strain_effects", "strain_id", "effect", "effect_percent");
         typeData = Database.loadMap("strains", "id", "type");
         reviewsModel = new StrainReviewSimilarityMatrix(strains, reviewData);
-        stringSimilarity = new StringSimilarity();
+        stringSimilarity = new StringSimilarity(3);
 
         System.out.println("Flavor data size: "+flavorData.size());
         System.out.println("Effect data size: "+effectData.size());

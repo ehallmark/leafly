@@ -34,7 +34,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         brandSimilarity = new SimilarityEngine(Database.loadBrands());
         List<String> types = new ArrayList<>(Database.loadTypes());
         types.addAll(Database.loadSubTypes());
-        nameSimilarity = new StringSimilarity();
+        nameSimilarity = new StringSimilarity(4);
         typeSimilarity = new SimilarityEngine(types);
 
         brandData = Database.loadMap("products", "product_id", "brand_name");
