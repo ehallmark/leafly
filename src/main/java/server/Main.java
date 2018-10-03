@@ -49,7 +49,7 @@ public class Main {
         ProductRecommender productRecommender = new ProductRecommender();
 
         get("/images/:product_id", (req, res)->{
-            File file = new File("images", req.params(":product_id")+".png");
+            File file = new File("leafly/product_images/", req.params(":product_id")+".png");
             if(!file.exists()) {
                 return null;
             }
