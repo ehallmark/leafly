@@ -18,6 +18,12 @@ import static j2html.TagCreator.*;
 import static spark.Spark.*;
 
 public class Main {
+    private static String truncateString(String str, int n) {
+        if(str==null||str.length()<=n) {
+            return str;
+        }
+        return str.substring(0, n);
+    }
 
     public static void main(String[] args) throws Exception {
         port(8080);
@@ -33,6 +39,42 @@ public class Main {
 
         StrainRecommender recommender = new StrainRecommender();
 
+        get("/products_ajax", (req,res)->{
+            Map<String,Object> response = new HashMap<>();
+            String _query = req.queryParams("q");
+            if(_query!=null&&_query.trim().length()==0) {
+                _query = null;
+            }
+            Integer page = null;
+            try {
+                page = Integer.valueOf(req.queryParams("page"));
+            } catch(Exception e) {
+                System.out.println("No page param found...");
+            }
+            final String query = _query;
+            List<Map<String,Object>> results = productData.stream().map(product->{
+                Map<String, Object> result = new HashMap<>();
+                result.put("text", truncateString(product.get("product_name").toString(), 50)+" by "+product.get("brand_name")+"("+product.get("type")+"/"+product.get("subtype")+")");
+                result.put("id", (String)product.get("product_id"));
+                return result;
+            }).filter(m->query==null||m.get("text").toString().toLowerCase().contains(query)).collect(Collectors.toList());
+
+            if(page!=null) {
+                int start = page*20;
+                if(results.size()>start) {
+                    results = results.subList(start, results.size());
+                }
+            }
+            Map<String,Object> pagination = new HashMap<>();
+            if(results.size()>20) {
+                pagination.put("more", true);
+                results = results.subList(0, 20);
+            }
+            response.put("results", results);
+            response.put("pagination", pagination);
+            return new Gson().toJson(response);
+        });
+
         get("/", (req, res)->{
             req.session(true);
             return htmlWrapper(div().withClass("container").with(
@@ -43,18 +85,15 @@ public class Main {
                         div().withClass("col-12").with(
                                 h5("Select Favorite Strains and Products"),
                                 form().withClass("strain_recommendation").with(
-                                        label("Strains").with(br(),select().withName("favorite_strains[]").withClass("strain_selection").attr("multiple").with(option()).with(
+                                        label("Strains").with(br(),select().attr("style", "width: 300px;").withName("favorite_strains[]").withClass("strain_selection").attr("multiple").with(option()).with(
                                                 strainData.stream().map(strain->option(strain.get("name").toString()+" - ("+strain.get("type")+")").withValue((String)strain.get("id")))
                                                 .collect(Collectors.toList())
                                         )),br(),
-                                        label("Products").with(br(),select().withName("favorite_products[]").withClass("product_selection").attr("multiple").with(option()).with(
-                                                productData.stream().map(product->option().withText(product.get("product_name").toString()+" by ").with(b(product.get("brand_name").toString())).withText("("+product.get("type")+"/"+product.get("subtype")+")").withValue((String)product.get("product_id")))
-                                                        .collect(Collectors.toList())
-                                        )),
+                                        label("Products").with(br(),select().attr("style", "width: 300px;").withName("favorite_products[]").withClass("product_selection").attr("multiple").with(option())),
                                         button("Suggest").withClass("btn btn-sm btn-outline-primary")
                                 )
                         ),div().withClass("col-12").with(
-                                h5("Strain Recommendations"),
+                                h5("Recommendations"),
                                 div().withId("results")
                         )
                 )

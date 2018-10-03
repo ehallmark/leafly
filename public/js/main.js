@@ -24,6 +24,11 @@ $(document).ready(function() {
     $('select.product_selection').select2({
         minimumResultsForSearch: 10,
         closeOnSelect: true,
-        placeholder: 'Select multiple products...'
+        placeholder: 'Select multiple products...',
+        ajax: {
+            url: '/products_ajax',
+            dataType: 'json'
+            // Additional AJAX parameters go here; see the end of this chapter for the full code of this example
+        }
     });
 });
