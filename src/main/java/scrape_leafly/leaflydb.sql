@@ -104,7 +104,7 @@ drop table brands;
 create table brands (
     brand_name text primary key
 );
-insert into brands ( select distinct brand_name from product_reviews );
+insert into brands ( select distinct brand_name from products );
 
 drop table product_types;
 create table product_types (
