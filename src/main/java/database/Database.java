@@ -99,6 +99,10 @@ public class Database {
         return loadSingleColumn("profile", "profiles");
     }
 
+    public static List<String> loadProducts() throws SQLException {
+        return loadSingleColumn("product_id", "products");
+    }
+
     public static List<String> loadFlavors() throws SQLException {
         return loadSingleColumn("flavor", "flavors");
     }
