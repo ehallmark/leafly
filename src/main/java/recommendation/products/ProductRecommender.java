@@ -214,8 +214,8 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         double sScore = 1d * associatedStrains.stream().mapToDouble(strain->{
             return strainSimilarityMap.getOrDefault(strain, 0.5);
         }).average().orElse(0.5);
-        double bScore = 0.25 * brandSimilarity.similarity(brands, knownBrands);
-        double tScore = 0.1 * typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubtypes);
+        double bScore = 0.05 * brandSimilarity.similarity(brands, knownBrands);
+        double tScore = 0.25 * typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubtypes);
         double rScore = 2d * rScores.getOrDefault(_productId, 0d);
         double nScore = 0.2 * previousProductRatings.keySet().stream()
                 .mapToDouble(product->
