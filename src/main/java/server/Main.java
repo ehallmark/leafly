@@ -36,7 +36,7 @@ public class Main {
             return htmlWrapper(div().withClass("container").with(
                 div().withClass("row").attr("style", "margin-top: 10%;").with(
                         div().withClass("col-12").with(
-                                h4("Strain StrainRecommendation System")
+                                h4("Strain Recommendation System")
                         ),
                         div().withClass("col-12").with(
                                 h5("Select Favorite Strains"),
