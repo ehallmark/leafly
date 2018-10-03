@@ -13,6 +13,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 import java.io.File;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -65,7 +66,7 @@ public class ProductScraper {
                     page = driver.getPageSource();
 
                     if (page != null && page.length() > 0) {
-                        System.out.println("Found products: " + id);
+                      //  System.out.println("Found products: " + id);
                         TimeUnit.MILLISECONDS.sleep(timeSleep);
                         FileUtils.writeStringToFile(new File(new File(folder, "products"), id), page, Charsets.UTF_8);
                     }
@@ -86,7 +87,7 @@ public class ProductScraper {
                         String seeAllHref = seeAll.attr("href");
                         String seeAllId = seeAllHref.replace("/", "_");
                         String seeAllUrl = "https://www.leafly.com" + seeAllHref;
-                        System.out.println("HREF: "+seeAllHref);
+                        //System.out.println("HREF: "+seeAllHref);
                         File seeAllFile = new File(new File(folder, "products"), seeAllId.replace("?",""));
                         if(!seeAllFile.exists()||reseed) {
                             driver.get(seeAllUrl);
@@ -129,6 +130,19 @@ public class ProductScraper {
                                     productId = itemId;
                                     handleProductPage(page, productId, conn, type, subtype);
                                 }
+                                // get photo
+                                String imageUrl = itemLink.select(".item-thumbnail-centered img[src]").attr("src");
+                                String imageName = productId+".png";
+                                File imageFile = new File("leafly/product_images/" + imageName);
+                                if (!imageFile.exists()) {
+                                    System.out.println("Downloading image: " + imageName);
+                                    try {
+                                        FileUtils.copyURLToFile(new URL(imageUrl), imageFile);
+                                    } catch(Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                imageFile = new File("leafly/product_images/" + imageName);
                                 if(itemLink.select(".rating").size()>0) {
                                     String itemHref = itemLink.attr("href")+"/reviews";
                                     while(itemLink!=null) {
@@ -177,7 +191,7 @@ public class ProductScraper {
         String description = document.select(".product-description").text().trim();
         String productPrice = document.select(".product-price").text().trim();
         String starRating = document.select(".product-rating .star-rating span[star-rating]").attr("star-rating");
-        System.out.println("Brand: "+brandName+", Product: "+productName+", Price: "+productPrice+", Rating: "+starRating+"\nDescription: "+shortDescription+"\n"+description+"\n");
+        //System.out.println("Brand: "+brandName+", Product: "+productName+", Price: "+productPrice+", Rating: "+starRating+"\nDescription: "+shortDescription+"\n"+description+"\n");
         Double productPriceDouble = productPrice.length()>0 ? Double.valueOf(productPrice.replace("$","").replace(",","")) : null;
         Double starRatingDouble = starRating!=null && starRating.length()>0 ? Double.valueOf(starRating) : null;
         final PreparedStatement ps = conn.prepareStatement("insert into products (product_id,product_name, brand_name, short_description, description, price, rating, strain_id, type, subtype) values (?,?,?,?,?,?,?,?,?,?) on conflict (product_id) do nothing");
@@ -223,7 +237,7 @@ public class ProductScraper {
                 upvotesDouble = upvotes!=null && upvotes.length()>0 ? Double.valueOf(upvotes) : null;
                 downvotesDouble = downvotes!=null && downvotes.length()>0 ? Double.valueOf(downvotes) : null;
             }
-            System.out.println("Author: "+author+", Rating: "+rating+", upvotes: "+upvotes+", downvotes: "+downvotes+"\n"+text+"\n");
+            //System.out.println("Author: "+author+", Rating: "+rating+", upvotes: "+upvotes+", downvotes: "+downvotes+"\n"+text+"\n");
             ps.setString(1, productId);
             ps.setString(2, author);
             ps.setObject(3, ratingDouble);

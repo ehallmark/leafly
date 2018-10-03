@@ -8,7 +8,11 @@ import recommendation.products.ProductRecommender;
 import recommendation.strains.StrainRecommendation;
 import recommendation.strains.StrainRecommender;
 
+import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletResponse;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +47,26 @@ public class Main {
 
         StrainRecommender strainRecommender = new StrainRecommender();
         ProductRecommender productRecommender = new ProductRecommender();
+
+        get("/images/:product_id", (req, res)->{
+            File file = new File("images", req.params(":product_id")+".png");
+            if(!file.exists()) {
+                return null;
+            }
+            try {
+                BufferedImage image = ImageIO.read(file.getAbsoluteFile());
+                HttpServletResponse raw = res.raw();
+                res.header("Content-Disposition", "attachment; filename=image.png");
+                ImageIO.write(image, "png", raw.getOutputStream());
+                raw.getOutputStream().flush();
+                raw.getOutputStream().close();
+                return raw;
+            } catch (IOException ex) {
+                halt();
+
+            }
+            return res;
+        });
 
         get("/products_ajax", (req,res)->{
             Map<String,Object> response = new HashMap<>();
@@ -137,9 +161,8 @@ public class Main {
                                         h6("Products")
                                 ).with(
                                         topProductRecommendations.stream().map(recommendation -> {
-                                            // List<String> links = productLinkMap.getOrDefault(recommendation.getProductId(), Collections.emptyList());
                                             return div().with(b(String.join("",productNameMap.getOrDefault(recommendation.getProductId(), Collections.emptyList())))).with(br())
-                                                    // .with(links.stream().map(link->img().withSrc(link)).collect(Collectors.toList()))
+                                                    .with(img().withSrc("/images/"+recommendation.getProductId()))
                                                     .with(
                                                             div().with(Stream.of(recommendation.toString().split("\\n")).map(line->{
                                                                 return div(line);
