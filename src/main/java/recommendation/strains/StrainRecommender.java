@@ -130,8 +130,7 @@ public class StrainRecommender implements Recommender<StrainRecommendation> {
                 knownTypes.put(type, knownTypes.get(type)+1d);
             }
         });
-        List<String> goodRatings = previousStrainRatings.entrySet()
-                .stream().filter(e->e.getValue()>=5).map(e->e.getKey()).collect(Collectors.toList());
+        List<String> goodRatings = new ArrayList<>(previousStrainRatings.keySet());
         final Map<String,Double> rScores = reviewsModel.similarity(goodRatings);
         final Map<String,Object> data = new HashMap<>();
         data.put("previousStrainRatings", previousStrainRatings);

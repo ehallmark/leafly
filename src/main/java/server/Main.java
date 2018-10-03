@@ -72,7 +72,7 @@ public class Main {
                 final Map<String,Object> recData = new HashMap<>();
                 recData.put("alpha", 0.2);
                 recData.put("previousStrainRatings", ratings);
-                List<StrainRecommendation> topRecommendations = recommender.topRecommendations(5, recData);
+                List<StrainRecommendation> topRecommendations = recommender.topRecommendations(10, recData);
 
                 html = div().withClass("col-12").with(
                         topRecommendations.stream().map(recommendation -> {
