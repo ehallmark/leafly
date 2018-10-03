@@ -17,6 +17,20 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ProductRecommender implements Recommender<ProductRecommendation> {
+    static Map<String,Double> TYPE_MAP = new HashMap<>();
+    static {
+        TYPE_MAP.put("cannabisdabbing", 0.1);
+        TYPE_MAP.put("cannabisedibles", 0.1);
+        TYPE_MAP.put("cannabissmoking", 0.1);
+        TYPE_MAP.put("cannabisvaping", 0.1);
+        TYPE_MAP.put("cannabisconcentrates", 0.1);
+        TYPE_MAP.put("cannabishemp-cbd", 0.1);
+        TYPE_MAP.put("cannabistopicals", 0.1);
+        TYPE_MAP.put("cannabisdabbing", 0.1);
+        TYPE_MAP.put("cannabisdabbing", 0.1);
+        TYPE_MAP.put("cannabisdabbing", 0.1);
+        TYPE_MAP.put("cannabisdabbing", 0.1);
+    }
     private StrainRecommender strainRecommender;
     private List<String> products;
     private Map<String,List<Object>> brandData;
@@ -36,7 +50,16 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         List<String> types = new ArrayList<>(Database.loadTypes());
         types.addAll(Database.loadSubTypes());
         nameSimilarity = new StringSimilarity(4);
-        typeSimilarity = new SimilarityEngine(types);
+        double[][] typeSimMatrix = new double[types.size()][types.size()];
+        for(int i = 0; i < types.size(); i++) {
+            for(int j = 0; j < types.size(); j++) {
+                if (i == j) typeSimMatrix[i][j] = 1;
+                else {
+                    typeSimMatrix[i][j] = Math.max(TYPE_MAP.getOrDefault(types.get(i) + types.get(j), 0d), TYPE_MAP.getOrDefault(types.get(j) + types.get(i), 0d));
+                }
+            }
+        }
+        typeSimilarity = new SimilarityEngine(types, typeSimMatrix);
 
         strainData = Database.loadMap("products", "product_id", "strain_id");
         brandData = Database.loadMap("products", "product_id", "brand_name");
@@ -140,6 +163,16 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
             return stream.sorted((e1, e2) -> Double.compare(e2.getOverallSimilarity(), e1.getOverallSimilarity())).limit(n).collect(Collectors.toList());
         } else {
             return stream.collect(Collectors.toList());
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        // test
+        List<String> types = Database.loadTypes();
+        for(int i = 0; i < types.size(); i++) {
+            for(int j = i+1; j < types.size(); j++) {
+                System.out.println("TYPE_MAP.put(\""+types.get(i)+types.get(j)+"\", 0.0);");
+            }
         }
     }
 }
