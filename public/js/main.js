@@ -2,7 +2,7 @@
 
 
 $(document).ready(function() {
-    $('form.recommendation').submit(function(e) {
+    $('form.strain_recommendation').submit(function(e) {
         e.preventDefault();
         var data = $(this).serialize();
         $.ajax({
