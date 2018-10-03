@@ -19,6 +19,11 @@ $(document).ready(function() {
     $('select.strain_selection').select2({
         minimumResultsForSearch: 10,
         closeOnSelect: true,
-        placeholder: 'Select multiple strains'
+        placeholder: 'Select multiple strains...'
+    });
+    $('select.product_selection').select2({
+        minimumResultsForSearch: 10,
+        closeOnSelect: true,
+        placeholder: 'Select multiple products...'
     });
 });
