@@ -3,8 +3,8 @@ package server;
 import com.google.gson.Gson;
 import database.Database;
 import j2html.tags.ContainerTag;
-import recommendation.Recommendation;
-import recommendation.Recommender;
+import strain_recommendation.StrainRecommendation;
+import strain_recommendation.StrainRecommender;
 
 import java.io.File;
 import java.util.Collections;
@@ -29,18 +29,18 @@ public class Main {
         Map<String,List<String>> linkMap = Database.loadMap("strain_photos", "strain_id", "photo_url").entrySet()
                 .stream().collect(Collectors.toMap(e->e.getKey(), e->e.getValue().stream().map(o->o.toString()).limit(5).collect(Collectors.toList())));
 
-        Recommender recommender = new Recommender();
+        StrainRecommender recommender = new StrainRecommender();
 
         get("/", (req, res)->{
             req.session(true);
             return htmlWrapper(div().withClass("container").with(
                 div().withClass("row").attr("style", "margin-top: 10%;").with(
                         div().withClass("col-12").with(
-                                h4("Strain Recommendation System")
+                                h4("Strain StrainRecommendation System")
                         ),
                         div().withClass("col-12").with(
                                 h5("Select Favorite Strains"),
-                                form().withClass("recommendation").with(
+                                form().withClass("strain_recommendation").with(
                                         select().withName("favorite_strains[]").withClass("strain_selection").attr("multiple").with(option()).with(
                                                 strainData.stream().map(strain->option(strain.get("name").toString()+" - ("+strain.get("type")+")").withValue((String)strain.get("id")))
                                                 .collect(Collectors.toList())
@@ -69,7 +69,7 @@ public class Main {
                     ratings.put(favoriteStrain, 5d);
                 }
 
-                List<Recommendation> topRecommendations = recommender.topRecommendations(5, ratings, 0.2);
+                List<StrainRecommendation> topRecommendations = recommender.topRecommendations(5, ratings, 0.2);
 
                 html = div().withClass("col-12").with(
                         topRecommendations.stream().map(recommendation -> {

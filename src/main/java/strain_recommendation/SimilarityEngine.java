@@ -1,7 +1,6 @@
-package recommendation;
+package strain_recommendation;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;

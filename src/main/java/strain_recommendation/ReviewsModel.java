@@ -1,10 +1,9 @@
-package recommendation;
+package strain_recommendation;
 
 import javafx.util.Pair;
 import lombok.Getter;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ReviewsModel {
     @Getter

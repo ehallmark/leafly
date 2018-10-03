@@ -1,4 +1,4 @@
-package recommendation;
+package strain_recommendation;
 
 import database.Database;
 import javafx.util.Pair;

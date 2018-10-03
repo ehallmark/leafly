@@ -1,13 +1,10 @@
-package recommendation;
+package product_recommendation;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
-import java.util.HashMap;
-import java.util.Map;
-
-public class Recommendation {
+public class ProductRecommendation {
     @Getter @Setter
     private double overallSimilarity;
     @Getter @Setter
@@ -24,7 +21,7 @@ public class Recommendation {
     private double lineageSimilarity;
     @Getter @Setter
     private String strain;
-    public Recommendation(@NonNull String strain) {
+    public ProductRecommendation(@NonNull String strain) {
         this.strain=strain;
     }
 

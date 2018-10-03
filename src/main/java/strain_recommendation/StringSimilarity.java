@@ -1,7 +1,6 @@
-package recommendation;
+package strain_recommendation;
 
 import info.debatty.java.stringsimilarity.Cosine;
-import info.debatty.java.stringsimilarity.QGram;
 import info.debatty.java.stringsimilarity.interfaces.StringDistance;
 
 public class StringSimilarity {
