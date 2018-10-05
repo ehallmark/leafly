@@ -2,6 +2,7 @@ package recommendation.products;
 
 import com.google.common.base.Functions;
 import database.Database;
+import javafx.util.Pair;
 import lombok.NonNull;
 import recommendation.Recommender;
 import recommendation.strains.LineageGraph;
@@ -222,7 +223,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         double bScore = 0.05 * brandSimilarity.similarity(brands, knownBrands);
         double tScore = 0.25 * typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubtypes);
         double rScore = 2d * rScores.getOrDefault(_productId, 0d);
-        double nScore = - 1.0 * previousProductRatings.keySet().stream()
+        double nScore = - 2.0 * previousProductRatings.keySet().stream()
                 .mapToDouble(product->
                         nameSimilarity.similarity(_productId, product))
                 .average().orElse(0d);
@@ -263,8 +264,8 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
                     .stream().map(Object::toString).collect(Collectors.toList());
             List<String> prevSubTypes = subTypeData.getOrDefault(product, Collections.emptyList())
                     .stream().map(Object::toString).collect(Collectors.toList());
-            String description = descriptionData.getOrDefault(product, Collections.emptyList())
-                    .stream().findAny().map(Object::toString).orElse(null);
+            String description = (String)descriptionData.getOrDefault(product, Collections.emptyList())
+                    .stream().findAny().orElse(null);
             if(description!=null) {
                 previousDescriptions.add(description);
             }
@@ -294,12 +295,40 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         newData.put("rScores", rScores);
         newData.put("alpha", 0.2);
 
-        Stream<ProductRecommendation> stream = products.stream().filter(strain->!previousProducts.contains(strain)).map(product->{
+        Stream<ProductRecommendation> stream = products.stream().filter(strain->!previousProducts.contains(strain))
+                // filter for association rules
+
+                .map(product->{
             return recommendationScoreFor(product, newData);
         });
         if(n > 0) {
             // TODO refine suggestions
-            return stream.sorted((e1, e2) -> Double.compare(e2.getOverallSimilarity(), e1.getOverallSimilarity())).limit(n).collect(Collectors.toList());
+            List<ProductRecommendation> recommendationsExtra = stream.sorted((e1, e2) -> Double.compare(e2.getOverallSimilarity(), e1.getOverallSimilarity())).limit(n*3).collect(Collectors.toList());
+            // now narrow down to best n / 3
+            double[] features = new double[6];
+            for(int i = 0; i < recommendationsExtra.size(); i++) {
+                ProductRecommendation recommendation = recommendationsExtra.get(i);
+                features[0] += recommendation.getBrandSimilarity();
+                features[1] += recommendation.getNameSimilarity();
+                features[2] += recommendation.getDescriptionSimilarity();
+                features[3] += recommendation.getReviewSimilarity();
+                features[4] += recommendation.getStrainSimilarity();
+                features[5] += recommendation.getTypeSimilarity();
+            }
+            return recommendationsExtra.stream().map(recommendation->{
+                double[] recFeatures = new double[]{
+                        recommendation.getBrandSimilarity(),
+                        recommendation.getNameSimilarity(),
+                        recommendation.getDescriptionSimilarity(),
+                        recommendation.getReviewSimilarity(),
+                        recommendation.getStrainSimilarity(),
+                        recommendation.getTypeSimilarity()
+                };
+                double score = SimilarityEngine.cosineSimilarity(features, recFeatures);
+                return new Pair<>(recommendation, score);
+            }).sorted((e1,e2)->Double.compare(e2.getValue(), e1.getValue()))
+                    .limit(n).map(e->e.getKey()).collect(Collectors.toList());
+
         } else {
             return stream.collect(Collectors.toList());
         }

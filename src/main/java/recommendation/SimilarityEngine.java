@@ -58,7 +58,7 @@ public class SimilarityEngine {
     }
 
 
-    private static double cosineSimilarity(double[] v1, double[] v2) {
+    public static double cosineSimilarity(double[] v1, double[] v2) {
         final int n = v1.length;
         double ab = 0;
         double a = 0;
