@@ -12,6 +12,8 @@ public class ProductRecommendation {
     @Getter @Setter
     private double brandSimilarity;
     @Getter @Setter
+    private double descriptionSimilarity;
+    @Getter @Setter
     private double nameSimilarity;
     @Getter @Setter
     private double reviewSimilarity;
@@ -30,6 +32,7 @@ public class ProductRecommendation {
                 + "\n\tBrand Similarity: " + brandSimilarity
                 + "\n\tType Similarity: " + typeSimilarity
                 + "\n\tReview Similarity: " + reviewSimilarity
+                + "\n\tDescription Similarity: "+descriptionSimilarity
                 + "\n\tName Similarity: " + nameSimilarity;
     }
 

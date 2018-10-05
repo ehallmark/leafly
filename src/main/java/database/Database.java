@@ -106,6 +106,9 @@ public class Database {
     public static List<String> loadEffects() throws SQLException {
         return loadSingleColumn("effect", "effects");
     }
+    public static List<String> loadDescriptions() throws SQLException {
+        return loadSingleColumn("description", "products");
+    }
 
     public static List<String> loadProfiles() throws SQLException {
         return loadSingleColumn("profile", "profiles");

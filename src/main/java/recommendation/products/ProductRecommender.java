@@ -161,6 +161,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
     private Map<String,List<Object>> brandData;
     private Map<String,List<Object>> strainData;
     private Map<String,List<Object>> typeData;
+    private Map<String,List<Object>> descriptionData;
     private Map<String,List<Object>> subTypeData;
     private ProductReviewModel productReviewModel;
     private SimilarityEngine brandSimilarity;
@@ -190,6 +191,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         brandData = Database.loadMap("products", "product_id", "brand_name");
         subTypeData = Database.loadMap("products", "product_id", "subtype");
         typeData = Database.loadMap("products", "product_id", "type");
+        descriptionData = Database.loadMap("products", "product_id", "description");
 
     }
 
@@ -200,7 +202,10 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         Map<String,Double> knownTypesAndSubtypes = (Map<String,Double>)data.get("knownTypesAndSubtypes");
         Map<String,Double> rScores = (Map<String,Double>)data.get("rScores");
         Map<String,Double> previousProductRatings = (Map<String,Double>)data.get("previousProductRatings");
+        List<String> previousDescriptions = (List<String>)data.get("previousDescriptions");
         double alpha = (Double)data.get("alpha");
+        String description = descriptionData.getOrDefault(_productId, Collections.emptyList())
+                .stream().findAny().map(o->o.toString()).orElse(null);
         List<String> associatedStrains = strainData.getOrDefault(_productId, Collections.emptyList())
                 .stream().filter(o->o!=null).map(Object::toString).collect(Collectors.toList());
         Map<String, Double> brands = brandData.getOrDefault(_productId, Collections.emptyList())
@@ -217,17 +222,19 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         double bScore = 0.05 * brandSimilarity.similarity(brands, knownBrands);
         double tScore = 0.25 * typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubtypes);
         double rScore = 2d * rScores.getOrDefault(_productId, 0d);
-        double nScore = 0.2 * previousProductRatings.keySet().stream()
+        double nScore = - 1.0 * previousProductRatings.keySet().stream()
                 .mapToDouble(product->
                         nameSimilarity.similarity(_productId, product))
                 .average().orElse(0d);
+        double dScore = 1.0 * nameSimilarity.similarity(description, String.join(" ", previousDescriptions));
         ProductRecommendation recommendation = new ProductRecommendation(_productId);
         recommendation.setBrandSimilarity(bScore);
         recommendation.setTypeSimilarity(tScore);
         recommendation.setReviewSimilarity(rScore);
         recommendation.setNameSimilarity(nScore);
         recommendation.setStrainSimilarity(sScore);
-        double score = bScore + rScore + tScore + nScore + sScore;
+        recommendation.setDescriptionSimilarity(dScore);
+        double score = bScore + rScore + tScore + nScore + sScore + dScore;
         recommendation.setOverallSimilarity(score * alpha);
         return recommendation;
     }
@@ -248,7 +255,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         Map<String,Double> knownTypesAndSubtypes = new HashMap<>();
         Map<String,Double> knownBrands = new HashMap<>();
         Map<String,Double> rScores = productReviewModel.similarity(goodProducts);
-
+        List<String> previousDescriptions = new ArrayList<>();
         previousProductRatings.forEach((product, score)->{
             List<String> prevBrands = brandData.getOrDefault(product, Collections.emptyList())
                     .stream().map(Object::toString).collect(Collectors.toList());
@@ -256,6 +263,11 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
                     .stream().map(Object::toString).collect(Collectors.toList());
             List<String> prevSubTypes = subTypeData.getOrDefault(product, Collections.emptyList())
                     .stream().map(Object::toString).collect(Collectors.toList());
+            String description = descriptionData.getOrDefault(product, Collections.emptyList())
+                    .stream().findAny().map(Object::toString).orElse(null);
+            if(description!=null) {
+                previousDescriptions.add(description);
+            }
             for(String brand : prevBrands) {
                 knownBrands.putIfAbsent(brand, 0d);
                 knownBrands.put(brand, knownBrands.get(brand)+1d);
@@ -278,6 +290,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         newData.put("currentProductId", currentProductId);
         newData.put("knownBrands", knownBrands);
         newData.put("knownTypesAndSubtypes", knownTypesAndSubtypes);
+        newData.put("previousDescriptions", previousDescriptions);
         newData.put("rScores", rScores);
         newData.put("alpha", 0.2);
 
@@ -285,6 +298,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
             return recommendationScoreFor(product, newData);
         });
         if(n > 0) {
+            // TODO refine suggestions
             return stream.sorted((e1, e2) -> Double.compare(e2.getOverallSimilarity(), e1.getOverallSimilarity())).limit(n).collect(Collectors.toList());
         } else {
             return stream.collect(Collectors.toList());
