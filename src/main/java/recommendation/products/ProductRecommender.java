@@ -2,6 +2,8 @@ package recommendation.products;
 
 import com.google.common.base.Functions;
 import database.Database;
+import info.debatty.java.stringsimilarity.Cosine;
+import info.debatty.java.stringsimilarity.interfaces.StringDistance;
 import javafx.util.Pair;
 import lombok.NonNull;
 import recommendation.Recommender;
@@ -297,7 +299,6 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
 
         Stream<ProductRecommendation> stream = products.stream().filter(strain->!previousProducts.contains(strain))
                 // filter for association rules
-
                 .map(product->{
             return recommendationScoreFor(product, newData);
         });
@@ -315,6 +316,8 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
                 features[4] += recommendation.getStrainSimilarity();
                 features[5] += recommendation.getTypeSimilarity();
             }
+            Set<String> seen = new HashSet<>(recommendationsExtra.size());
+            StringDistance stringDistance = new Cosine(3);
             return recommendationsExtra.stream().map(recommendation->{
                 double[] recFeatures = new double[]{
                         recommendation.getBrandSimilarity(),
@@ -324,9 +327,14 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
                         recommendation.getStrainSimilarity(),
                         recommendation.getTypeSimilarity()
                 };
+                double maxSim = seen.stream().mapToDouble(s->{
+                    return ((Cosine) stringDistance).similarity(s, recommendation.getProductId());
+                }).max().orElse(0);
+                if(maxSim > 0.80) return null;
                 double score = SimilarityEngine.cosineSimilarity(features, recFeatures);
+                seen.add(recommendation.getProductId());
                 return new Pair<>(recommendation, score);
-            }).sorted((e1,e2)->Double.compare(e2.getValue(), e1.getValue()))
+            }).filter(f->f!=null).sorted((e1,e2)->Double.compare(e2.getValue(), e1.getValue()))
                     .limit(n).map(e->e.getKey()).collect(Collectors.toList());
 
         } else {
