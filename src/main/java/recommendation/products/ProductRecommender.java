@@ -408,7 +408,8 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         if(n > 0) {
             // TODO refine suggestions
             List<ProductRecommendation> recommendationsExtra = stream.sorted((e1, e2) -> Double.compare(e2.getOverallSimilarity(), e1.getOverallSimilarity())).limit(n*3).collect(Collectors.toList());
-            // now narrow down to best n / 3
+            // now narrow down to best n /
+            final int maxOfSameSubType = 3;
             double[] features = new double[6];
             for(int i = 0; i < recommendationsExtra.size(); i++) {
                 ProductRecommendation recommendation = recommendationsExtra.get(i);
@@ -421,6 +422,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
             }
             Set<String> seen = new HashSet<>(recommendationsExtra.size());
             StringDistance stringDistance = new Cosine(3);
+            final Map<String,Integer> subTypesSeenMap = new HashMap<>();
             return recommendationsExtra.stream().map(recommendation->{
                 double[] recFeatures = new double[]{
                         recommendation.getBrandSimilarity(),
@@ -438,6 +440,17 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
                 seen.add(recommendation.getProductId());
                 return new Pair<>(recommendation, score);
             }).filter(f->f!=null).sorted(Comparator.comparingDouble(e->e.getValue()))
+                    .filter(pair->{
+                        String type = subTypeData.getOrDefault(pair.getKey().getProductId(), Collections.emptyList())
+                                .stream().map(Object::toString).findAny().orElse(null);
+                        if(type==null) return false;
+                        subTypesSeenMap.putIfAbsent(type, 0);
+                        if(subTypesSeenMap.get(type) <= maxOfSameSubType) {
+                            subTypesSeenMap.put(type, subTypesSeenMap.get(type)+1);
+                            return true;
+                        }
+                        return false;
+                    })
                     .limit(n).map(e->e.getKey())
                     .sorted((e1,e2)->Double.compare(e2.getOverallSimilarity(), e1.getOverallSimilarity())).collect(Collectors.toList());
 
