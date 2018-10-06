@@ -46,7 +46,7 @@ public class DescriptionSimilarity {
         Set<String> set2 = new HashSet<>(Arrays.asList(words2));
         set1.removeIf(STOP_WORDS::contains);
         set2.removeIf(STOP_WORDS::contains);
-        if(set1.size()==0 || set2.size()==0) {
+        if(set1.size() < 5 || set2.size() < 5) {
             return 0d;
         }
         Set<String> set3 = new HashSet<>();
@@ -65,5 +65,8 @@ public class DescriptionSimilarity {
     public static void main(String[] args) throws Exception {
         // test
         new DescriptionSimilarity();
+        for(String subtype : Database.loadSubTypes().stream().sorted().collect(Collectors.toList())) {
+            System.out.println("BRAND_MULTIPLIER_BY_TYPE.put(\""+subtype+"\", 1.0);");
+        }
     }
 }

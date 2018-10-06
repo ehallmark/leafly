@@ -20,12 +20,111 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ProductRecommender implements Recommender<ProductRecommendation> {
-    static Map<String,Double> TYPE_MAP = new HashMap<>();
+    private static Map<String,Double> TYPE_MAP = new HashMap<>();
+    private static Map<String,Double> BRAND_MULTIPLIER_BY_TYPE = new HashMap<>();
     static {
+        // brand multipliers by type
+        BRAND_MULTIPLIER_BY_TYPE.put("analytics-testing", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("ashtrays", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("balms", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("bath-body", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("batteries-power", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("beauty", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("beverages", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("bong-pipe-storage", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("bongs-waterpipes", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("books", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("bowl-pieces", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("breakfast", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("brownies", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("bubblers", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("candy", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("cartridges", 5.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("chocolates", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("climate-controls", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("clones", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("concentrate-storage", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("condiments", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("consulting", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("cookies", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("cooking", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("dab-and-oil-rigs", 5.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("design-build", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("desktop-vaporizers", 5.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("edible-capsules", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("events", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("financial", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("flower", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("flower-storage", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("frozen", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("games", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("grinders", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("grow-lights", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("grow-media", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("grow-tents", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("harvest", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("hats", 5.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("hemp-edibles", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("hemp-oil", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("hemp-tinctures", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("hemp-topicals", 5.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("hoodies", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("hydroponics", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("ingestible-concentrates", 5.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("insurance", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("label-packaging", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("learning", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("legal", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("lighters", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("lodging", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("lotions", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("lubricants-oils", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("marketing", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("miscellaneous", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("nails-domes-attatchments", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("novelties", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("nutrients", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("other-apparel", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("other-grow-supplies", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("packages", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("pest-control", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("pet-capsules", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("pet-sprays", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("pet-tinctures", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("pet-treats", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("pipes", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("portable-vaporizers", 5.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("pos-systems-displays", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("posters-art", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("prerolls", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("processing", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("rolling-machines", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("rolling-papers", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("rolling-trays", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("scales", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("seeds", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("shake", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("shirts", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("smoking-accessories", 5.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("snack-foods", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("solvent", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("solventless", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("sprays", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("terpenes", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("testers-meters", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("tinctures-sublingual", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("tools-accessories", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("tours", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("transdermal-patches", 1.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("vape-pens", 5.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("vaporizer-accessories", 5.0);
+        BRAND_MULTIPLIER_BY_TYPE.put("wholesale-distribution", 5.0);
+
+        // type map
         TYPE_MAP.put("dabbingstorage", 0.0);
         TYPE_MAP.put("dabbingbooks-games", 0.0);
         TYPE_MAP.put("dabbingedibles", 0.1);
-        TYPE_MAP.put("dabbingcannabis", 0.15);
+        TYPE_MAP.put("dabbingcannabis", 0.0);
         TYPE_MAP.put("dabbinggrowing", 0.0);
         TYPE_MAP.put("dabbingsmoking", 0.15);
         TYPE_MAP.put("dabbinghemp-cbd", 0.1);
@@ -64,7 +163,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         TYPE_MAP.put("books-gamesother", 0.0);
         TYPE_MAP.put("books-gamesvaping", 0.0);
         TYPE_MAP.put("books-gamesapparel", 0.0);
-        TYPE_MAP.put("ediblescannabis", 0.15);
+        TYPE_MAP.put("ediblescannabis", 0.0);
         TYPE_MAP.put("ediblesgrowing", 0.0);
         TYPE_MAP.put("ediblessmoking", 0.15);
         TYPE_MAP.put("edibleshemp-cbd", 0.15);
@@ -76,18 +175,18 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         TYPE_MAP.put("ediblesother", 0.0);
         TYPE_MAP.put("ediblesvaping", 0.1);
         TYPE_MAP.put("ediblesapparel", 0.0);
-        TYPE_MAP.put("cannabisgrowing", 0.0);
-        TYPE_MAP.put("cannabissmoking", 0.15);
-        TYPE_MAP.put("cannabishemp-cbd", 0.15);
-        TYPE_MAP.put("cannabisconcentrates", 0.15);
-        TYPE_MAP.put("cannabistopicals", 0.15);
+        TYPE_MAP.put("cannabisgrowing", 0.3);
+        TYPE_MAP.put("cannabissmoking", 0.0);
+        TYPE_MAP.put("cannabishemp-cbd", 0.0);
+        TYPE_MAP.put("cannabisconcentrates", 0.0);
+        TYPE_MAP.put("cannabistopicals", 0.0);
         TYPE_MAP.put("cannabistourism", 0.0);
         TYPE_MAP.put("cannabisservices", 0.0);
         TYPE_MAP.put("cannabispets", 0.0);
         TYPE_MAP.put("cannabisother", 0.0);
-        TYPE_MAP.put("cannabisvaping", 0.15);
+        TYPE_MAP.put("cannabisvaping", 0.0);
         TYPE_MAP.put("cannabisapparel", 0.0);
-        TYPE_MAP.put("growingsmoking", 0.15);
+        TYPE_MAP.put("growingsmoking", 0.0);
         TYPE_MAP.put("growinghemp-cbd", 0.0);
         TYPE_MAP.put("growingconcentrates", 0.0);
         TYPE_MAP.put("growingtopicals", 0.0);
@@ -151,7 +250,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
                     TYPE_MAP.put(t1+type, 0.5);
                     for (int j = i + 1; j < n; j++) {
                         String t2 = subtypes.get(j);
-                        TYPE_MAP.put(t1 + t2, 1.0 / subtypes.size());
+                        TYPE_MAP.put(t1 + t2, 0.25 / subtypes.size());
                     }
                 }
             });
@@ -170,6 +269,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
     private SimilarityEngine brandSimilarity;
     private SimilarityEngine typeSimilarity;
     private StringSimilarity nameSimilarity;
+    private DescriptionSimilarity descriptionSimilarity;
     public ProductRecommender() throws SQLException {
         strainRecommender = new StrainRecommender();
         this.products = Database.loadProducts();
@@ -179,6 +279,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         List<String> types = new ArrayList<>(Database.loadTypes());
         types.addAll(Database.loadSubTypes());
         nameSimilarity = new StringSimilarity(4);
+        descriptionSimilarity = new DescriptionSimilarity();
         double[][] typeSimMatrix = new double[types.size()][types.size()];
         for(int i = 0; i < types.size(); i++) {
             for(int j = 0; j < types.size(); j++) {
@@ -223,14 +324,15 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         double sScore = scoreWeight * associatedStrains.stream().mapToDouble(strain->{
             return strainSimilarityMap.getOrDefault(strain, scoreWeight/2);
         }).average().orElse(0.5);
-        double bScore = 0.05 * brandSimilarity.similarity(brands, knownBrands);
+        double brandMultiplier = subtypes.keySet().stream().mapToDouble(k->BRAND_MULTIPLIER_BY_TYPE.getOrDefault(k,1.0)).average().orElse(1.0);
+        double bScore = 0.05 * brandMultiplier * brandSimilarity.similarity(brands, knownBrands);
         double tScore = 0.25 * typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubtypes);
         double rScore = 2d * rScores.getOrDefault(_productId, 0d);
         double nScore = -0.5 * previousProductRatings.keySet().stream()
                 .mapToDouble(product->
                         nameSimilarity.similarity(_productId, product))
                 .average().orElse(0d);
-        double dScore = 1.0 * nameSimilarity.similarity(description, String.join(" ", previousDescriptions));
+        double dScore = 1.0 * descriptionSimilarity.similarity(description, String.join(" ", previousDescriptions));
         ProductRecommendation recommendation = new ProductRecommendation(_productId);
         recommendation.setBrandSimilarity(bScore);
         recommendation.setTypeSimilarity(tScore);
@@ -335,7 +437,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
                 double score = SimilarityEngine.cosineSimilarity(features, recFeatures);
                 seen.add(recommendation.getProductId());
                 return new Pair<>(recommendation, score);
-            }).filter(f->f!=null).sorted((e1,e2)->Double.compare(e2.getValue(), e1.getValue()))
+            }).filter(f->f!=null).sorted(Comparator.comparingDouble(e->e.getValue()))
                     .limit(n).map(e->e.getKey())
                     .sorted((e1,e2)->Double.compare(e2.getOverallSimilarity(), e1.getOverallSimilarity())).collect(Collectors.toList());
 
