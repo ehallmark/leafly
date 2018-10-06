@@ -250,7 +250,7 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
                     TYPE_MAP.put(t1+type, 0.5);
                     for (int j = i + 1; j < n; j++) {
                         String t2 = subtypes.get(j);
-                        TYPE_MAP.put(t1 + t2, 0.25 / subtypes.size());
+                        TYPE_MAP.put(t1 + t2, 0.5 / subtypes.size());
                     }
                 }
             });
@@ -320,15 +320,15 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
                 .stream().collect(Collectors.toMap(Object::toString, e->1d));
         Map<String,Double> typesAndSubTypes = new HashMap<>(types);
         typesAndSubTypes.putAll(subtypes);
-        double scoreWeight = 1d;
+        double scoreWeight = 0.5;
         double sScore = scoreWeight * associatedStrains.stream().mapToDouble(strain->{
             return strainSimilarityMap.getOrDefault(strain, scoreWeight/2);
         }).average().orElse(0.5);
         double brandMultiplier = subtypes.keySet().stream().mapToDouble(k->BRAND_MULTIPLIER_BY_TYPE.getOrDefault(k,1.0)).average().orElse(1.0);
-        double bScore = 0.05 * brandMultiplier * brandSimilarity.similarity(brands, knownBrands);
-        double tScore = 0.25 * typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubtypes);
-        double rScore = 2d * rScores.getOrDefault(_productId, 0d);
-        double nScore = -0.5 * previousProductRatings.keySet().stream()
+        double bScore = 0.2 * brandMultiplier * brandSimilarity.similarity(brands, knownBrands);
+        double tScore = 0.5 * typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubtypes);
+        double rScore = 1.0 * rScores.getOrDefault(_productId, 0d);
+        double nScore = -1. * previousProductRatings.keySet().stream()
                 .mapToDouble(product->
                         nameSimilarity.similarity(_productId, product))
                 .average().orElse(0d);
