@@ -322,13 +322,13 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         typesAndSubTypes.putAll(subtypes);
         double scoreWeight = 0.5;
         double sScore = scoreWeight * associatedStrains.stream().mapToDouble(strain->{
-            return strainSimilarityMap.getOrDefault(strain, scoreWeight/2);
-        }).average().orElse(0.5);
+            return strainSimilarityMap.getOrDefault(strain, scoreWeight/8);
+        }).average().orElse(scoreWeight/8);
         double brandMultiplier = subtypes.keySet().stream().mapToDouble(k->BRAND_MULTIPLIER_BY_TYPE.getOrDefault(k,1.0)).average().orElse(1.0);
         double bScore = 0.2 * brandMultiplier * brandSimilarity.similarity(brands, knownBrands);
         double tScore = 0.5 * typeSimilarity.similarity(typesAndSubTypes, knownTypesAndSubtypes);
         double rScore = 1.0 * rScores.getOrDefault(_productId, 0d);
-        double nScore = -1. * previousProductRatings.keySet().stream()
+        double nScore = -0.5 * previousProductRatings.keySet().stream()
                 .mapToDouble(product->
                         nameSimilarity.similarity(_productId, product))
                 .average().orElse(0d);
