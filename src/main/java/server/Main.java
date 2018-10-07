@@ -106,7 +106,7 @@ public class Main {
 
         get("/", (req, res)->{
             req.session(true);
-            return htmlWrapper(div().withClass("container").with(
+            return htmlWrapper(div().withClass("container-fluid").with(
                 div().withClass("row").attr("style", "margin-top: 10%;").with(
                         div().withClass("col-12").with(
                                 h4("Strain Recommendation System")
@@ -198,8 +198,12 @@ public class Main {
     }
 
     private static ContainerTag htmlWrapper(ContainerTag inner) {
-        return html().attr("style", "height: 100%;").with(
+        return html().attr("lang","en").with(
                 head().with(
+                        meta().attr("charset","utf-8"),
+                        meta().attr("http-equiv","X-UA-Compatible").attr("content","IE=edge"),
+                        meta().attr("name","viewport").attr("content","width=device-width, initial-scale=1"),
+                        title("Strain Recommendation"),
                         script().withSrc("/js/jquery-3.3.1.min.js"),
                         script().withSrc("/js/jquery-ui-1.12.1.min.js"),
                         script().withSrc("/js/popper.min.js"),
