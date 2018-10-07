@@ -407,9 +407,9 @@ public class ProductRecommender implements Recommender<ProductRecommendation> {
         });
         if(n > 0) {
             // TODO refine suggestions
-            List<ProductRecommendation> recommendationsExtra = stream.sorted((e1, e2) -> Double.compare(e2.getOverallSimilarity(), e1.getOverallSimilarity())).limit(n*3).collect(Collectors.toList());
+            List<ProductRecommendation> recommendationsExtra = stream.sorted((e1, e2) -> Double.compare(e2.getOverallSimilarity(), e1.getOverallSimilarity())).limit(n*5).collect(Collectors.toList());
             // now narrow down to best n /
-            final int maxOfSameSubType = 3;
+            final int maxOfSameSubType = 5;
             double[] features = new double[6];
             for(int i = 0; i < recommendationsExtra.size(); i++) {
                 ProductRecommendation recommendation = recommendationsExtra.get(i);

@@ -112,13 +112,17 @@ public class Main {
                                 h4("Strain Recommendation System")
                         ),
                         div().withClass("col-12").with(
-                                h5("Select Favorite Strains and Products"),
-                                form().withClass("strain_recommendation").with(
-                                        label("Strains").with(br(),select().attr("style", "width: 300px;").withName("favorite_strains[]").withClass("strain_selection").attr("multiple").with(option()).with(
-                                                strainData.stream().map(strain->option(strain.get("name").toString()+" - ("+strain.get("type")+")").withValue((String)strain.get("id")))
-                                                .collect(Collectors.toList())
-                                        )),br(),
-                                        label("Products").with(br(),select().attr("style", "width: 300px;").withName("favorite_products[]").withClass("product_selection").attr("multiple").with(option())),br(), br(),button("Suggest").withClass("btn btn-sm btn-outline-primary")
+                                div().withClass("row").with(
+                                        div().withClass("col-12 col-md-6").with(
+                                                h5("Select Favorite Strains and Products"),
+                                                form().withClass("strain_recommendation").with(
+                                                        label("Strains").attr("style", "width: 100%").with(br(),select().attr("style", "width: 100%;").withName("favorite_strains[]").withClass("strain_selection").attr("multiple").with(option()).with(
+                                                                strainData.stream().map(strain->option(strain.get("name").toString()+" - ("+strain.get("type")+")").withValue((String)strain.get("id")))
+                                                                .collect(Collectors.toList())
+                                                        )),br(),
+                                                        label("Products").attr("style", "width: 100%").with(br(),select().attr("style", "width: 100%").withName("favorite_products[]").withClass("product_selection").attr("multiple").with(option())),br(), br(),button("Suggest").withClass("btn btn-sm btn-outline-primary")
+                                                )
+                                        )
                                 )
                         ),div().withClass("col-12").with(
                                 h5("Recommendations"),
@@ -157,7 +161,7 @@ public class Main {
 
                 html = div().withClass("col-12").with(
                         div().withClass("row").with(
-                                div().withClass("col-6").with(
+                                div().withClass("col-12 col-md-6").with(
                                         h6("Products")
                                 ).with(
                                         topProductRecommendations.stream().map(recommendation -> {
@@ -169,7 +173,7 @@ public class Main {
                                                             }).collect(Collectors.toList()))
                                                     ).with(hr());
                                         }).collect(Collectors.toList())
-                                ),div().withClass("col-6").with(
+                                ),div().withClass("col-12 col-md-6").with(
                                         h6("Strains")
                                 ).with(
                                         topStrainRecommendations.stream().map(recommendation -> {
